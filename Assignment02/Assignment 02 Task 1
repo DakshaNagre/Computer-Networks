@@ -1,0 +1,19 @@
+[dnagre@silo ~]$ telnet mail-relay.iu.edu 25
+Trying 134.68.220.47...
+Connected to mail-relay.iu.edu.
+Escape character is '^]'.
+220 Sendmail ESMTP - IU Campus Communications Team - Mail-Relay
+HELO mail-relay.iu.edu
+250 mail-relay.iu.edu Hello silo.soic.indiana.edu [129.79.247.5], pleased to meet you
+MAIL From: dnagre@iu.edu
+RCPT To: sice-networks-l@list.indiana.edu250 2.1.0 dnagre@iu.edu... Sender ok
+
+250 2.1.5 sice-networks-l@list.indiana.edu... Recipient ok
+DATA
+354 Enter mail, end with "." on a line by itself
+Subject: “Daksha Nagre Assignment 01 SMTP”
+Doing Task 1 of Assignment 2
+.
+250 2.0.0 08L6EFos016597 Message accepted for delivery
+
+
