@@ -1,0 +1,587 @@
+Skip to content
+Enterprise
+Search or jump to…
+
+Pull requests
+Issues
+Explore
+ 
+@dnagre 
+Learn Git and GitHub without any code!
+Using the Hello World guide, you’ll start a branch, write comments, and open a pull request.
+
+
+SICE-Networks
+/
+Net-Fall20
+6
+0
+10
+ Code
+ Issues 0
+ Pull requests 0
+ Projects 0
+ Wiki
+ Insights
+Net-Fall20/04_rudp/README.org
+@jemusser jemusser Update README.org
+33a13f4 9 hours ago
+132 lines (99 sloc)  8.5 KB
+  
+Reliable UDP (Part 1)
+This is part 1 of 2. Part 2 is here.
+
+Instructions
+The purpose of this assignment is to extend your netster code so that it supports reliable network communication over UDP - Reliable UDP (RUDP)! You already implemented an application protocol over TCP and UDP and you will now have an opportunity to test your existing code over an unreliable network. Once the limitations of UDP over an unreliable channel become clear you should feel motivated to solve the issue at hand with your own RUDP implementation.
+
+This assignment requires both careful planning and likely several iterations of your design before it meets the specifications put forth in the tasks below. You will have more time to complete this assignment, but be sure to start early and begin experimenting with a lossy network to understand how things work. Good luck!
+
+Emulating your local coffee shop’s free public Wi-Fi
+On a Linux machine where you have sudo privileges, you can emulate a lossy network using tc (traffic control) and netem (network emulator).
+
+tc allows a user to simulate network properties on linux machines; properties such as latency and packet loss rates. These properties can be restricted to specific TCP/UDP ports. This is the approach you will use in this assignment to test your rudp implementation.
+
+# emulate latency and loss on certain port ranges
+declare -x LAT="25ms"
+declare -x iface="lo"
+declare -x DMASK=0xff00
+
+declare -x ID=2
+declare -x LOSS=0
+declare -x DPORT=2048
+sudo tc qdisc add dev $iface root handle 1: htb
+sudo tc class add dev $iface parent 1: classid 1:1 htb rate 10000Mbps
+sudo tc class add dev $iface parent 1:1 classid 1:${ID} htb rate 10000Mbps
+sudo tc qdisc add dev $iface parent 1:${ID} handle ${ID}0: netem delay $LAT loss $LOSS limit 10000
+sudo tc filter add dev $iface parent 1:0 protocol ip u32 match ip dport $DPORT $DMASK flowid 1:${ID}
+
+declare -x ID=3
+declare -x LOSS=1
+declare -x DPORT=4096
+sudo tc class add dev $iface parent 1:1 classid 1:${ID} htb rate 10000Mbps
+sudo tc qdisc add dev $iface parent 1:${ID} handle ${ID}0: netem delay $LAT loss $LOSS limit 10000
+sudo tc filter add dev $iface parent 1:0 protocol ip u32 match ip dport $DPORT $DMASK flowid 1:${ID}
+
+declare -x ID=4
+declare -x LOSS=30
+declare -x DPORT=8192
+sudo tc class add dev $iface parent 1:1 classid 1:${ID} htb rate 10000Mbps
+sudo tc qdisc add dev $iface parent 1:${ID} handle ${ID}0: netem delay $LAT loss $LOSS limit 10000
+sudo tc filter add dev $iface parent 1:0 protocol ip u32 match ip dport $DPORT $DMASK flowid 1:${ID}
+Using these recipes, your development environment will now have special port ranges with bad performance:
+
+dst port range	latency	loss
+2048-2304	25ms	0%
+4096-4352	25ms	1%
+8192-8448	25ms	30%
+To remove these settings, use the following:
+
+declare -x iface="lo"
+sudo tc qdisc del dev $iface root
+How to develop and test with packet loss and delay
+Other ports (not within the ranges described in the table above) are normal, with no added latency or loss behavior.
+The test ports add 25ms latency in both directions, or 50ms round-trip-time (RTT).
+You can observe the impact of 30% loss across the network with two terminals.
+
+Server terminal:
+
+server$ ./netster -u -p 8199
+<...missing lots of input from the client...>
+Client terminal:
+
+client$ ./netster -u -p 8199 localhost
+Hello, I am a client
+send a message: <...type lots of input...>
+<...missing lots of responses from the server...>
+Task 1 - Extend netster to transfer file data
+You should extend netster so that you can transfer file data from client to server. In addition to infrequent request/response messages from the previous assignment, you will now need to send lots of data at once and stress the underlying network. Reading from a file and transfering its contents over the network meets that criteria. Having the netster server save the file also lets you check if your RUDP design is working correctly. Obviously, the received and saved file should be a bit-wise duplicate of the source file sent by the netster client when transfered with a working RUDP design.
+
+The netster skeleton code has a command line argument (-f) to specify a filename, and should read the file if started as a client, or write the file if started as a server.
+
+With an open file handle available when the -f option if given, you will use the file I/O methods in your given programming language to read and write file data. For example, fread() and fwrite() in C, or f.read() and f.write() in Python3. It is your job to move file data between the file handle and the network socket using an intermediate buffer. Performance is not a primary concern here, so copying in and out of a user space buffer is perfectly fine. When segmenting the file into UDP frames, restrict each packet to less than a single MTU (1500 bytes for the purposes of this assignment). In practical terms, this means limiting the send size to approx. 1024 bytes.
+
+Task 2 - Implement alternating bit, stop-and-wait protocol
+You will implement a stop-and-wait protocol (i.e. alternating bit protocol), called rdt3.0 in the book and slides.
+
+Since you implemented the UDP client/server in the previous assignment, you already have experience with a similar unreliable channel interface (i.e. udt_send() and udt_recv() from rdt3.0). You must now implement the rdt_send() and rdt_rcv() interface that your client and server will use when running in RUDP mode. In other words, your rdt_ methods should provide the reliable service for the calling application and use the underlying UDP sendto() and recvfrom() methods to access the unreliable channel.
+
+There are a number of ways to implement this task correctly; however, there are a few key features and assumptions you can count on:
+
+You must introduce a new RUDP header that encapsulates the application data sent in via rdt_send(). This should include fields to support sequence numbers, message type (ACK, NACK, etc.), and potentially other fields like length.
+You will need a countdown timer.
+You may assume unidirectional data transfer (e.g. client -> server). You can make changes in your netster application code to ensure unidirectional flow (e.g. file transfer) and also to pace how often data is sent into your RUDP interface for debugging purposes.
+You may use both ACK and NACK control messages instead of duplicate ACKs.
+You may assume only a single client RUDP session at a time.
+You may assume that UDP handles the checksum error detection for you. Your implementation should treat any potentially corrupt packets the same as if they were simply lost.
+Your strategy for state management and handling control messages is up to you. The rdt3.0 state machines from the book and slides may be guides but the expectation is that many different implementations should arise from this assignment.
+
+TO SUBMIT
+Write well-documented and well-formatted code in your a3 and netster files for Tasks 1 and 2.
+Commit and push your changes to your Net-Fall20 github.iu.edu repository.
+Submit to Canvas a URL for your repository containing a commit hash. To find this url, go to your Net-Fall20 repository’s commits endpoint, and choose one specific commit for your teachers to grade.
+./images/out.gif
+
+Your URL should look similar to this:
+
+https://github.iu.edu/username/Net-Fall20/commit/00a3e8fc1e0f2bad388a9f138be1e909eef25eb4
+Replace username with your username, and replace 00a3e8fc1e0f2bad388a9f138be1e909eef25eb4 with the commit hash of your chosen commit.
+
+You can find this same commit hash by running the command git log from your terminal, after changing directory to your repository folder.
+
+© 2020 GitHub, Inc.
+Help
+Support
+API
+Training
+Blog
+About
+GitHub Enterprise Server 2.21.6
+
+
+
+Origins
+The earliest suggestion of unusual disappearances in the Bermuda area appeared in a September 17, 1950, article published in The Miami Herald (Associated Press)[4] by Edward Van Winkle Jones.[5] Two years later, Fate magazine published "Sea Mystery at Our Back Door",[6][7] a short article by George Sand covering the loss of several planes and ships, including the loss of Flight 19, a group of five US Navy Grumman TBM Avenger torpedo bombers on a training mission. Sand's article was the first to lay out the now-familiar triangular area where the losses took place, as well as the first to suggest a supernatural element to the Flight 19 incident. Flight 19 alone would be covered again in the April 1962 issue of American Legion magazine.[8] In it, author Allan W. Eckert wrote that the flight leader had been heard saying, "We are entering white water, nothing seems right. We don't know where we are, the water is green, no white." He also wrote that officials at the Navy board of inquiry stated that the planes "flew off to Mars."[9]
+
+In February 1964, Vincent Gaddis wrote an article called "The Deadly Bermuda Triangle" in the pulp magazine Argosy saying Flight 19 and other disappearances were part of a pattern of strange events in the region.[10] The next year, Gaddis expanded this article into a book, Invisible Horizons.[11]
+
+Other writers elaborated on Gaddis' ideas: John Wallace Spencer (Limbo of the Lost, 1969, repr. 1973);[12] Charles Berlitz (The Bermuda Triangle, 1974);[13] Richard Winer (The Devil's Triangle, 1974),[14] and many others, all keeping to some of the same supernatural elements outlined by Eckert.[15]
+
+Triangle area
+The Gaddis Argosy article delineated the boundaries of the triangle,[10] giving its vertices as Miami; San Juan, Puerto Rico; and Bermuda. Subsequent writers did not necessarily follow this definition.[16] Some writers gave different boundaries and vertices to the triangle, with the total area varying from 1,300,000 to 3,900,000 km2 (500,000 to 1,510,000 sq mi).[16] "Indeed, some writers even stretch it as far as the Irish coast."[2] Consequently, the determination of which accidents occurred inside the triangle depends on which writer reported them.[16]
+
+Criticism of the concept
+Larry Kusche
+Larry Kusche, author of The Bermuda Triangle Mystery: Solved (1975)[1] argued that many claims of Gaddis and subsequent writers were exaggerated, dubious or unverifiable. Kusche's research revealed a number of inaccuracies and inconsistencies between Berlitz's accounts and statements from eyewitnesses, participants, and others involved in the initial incidents. Kusche noted cases where pertinent information went unreported, such as the disappearance of round-the-world yachtsman Donald Crowhurst, which Berlitz had presented as a mystery, despite clear evidence to the contrary. Another example was the ore-carrier recounted by Berlitz as lost without trace three days out of an Atlantic port when it had been lost three days out of a port with the same name in the Pacific Ocean. Kusche also argued that a large percentage of the incidents that sparked allegations of the Triangle's mysterious influence actually occurred well outside it. Often his research was simple: he would review period newspapers of the dates of reported incidents and find reports on possibly relevant events like unusual weather, that were never mentioned in the disappearance stories.
+
+Kusche concluded that:
+
+The number of ships and aircraft reported missing in the area was not significantly greater, proportionally speaking, than in any other part of the ocean.
+In an area frequented by tropical cyclones, the number of disappearances that did occur were, for the most part, neither disproportionate, unlikely, nor mysterious.
+Furthermore, Berlitz and other writers would often fail to mention such storms or even represent the disappearance as having happened in calm conditions when meteorological records clearly contradict this.
+The numbers themselves had been exaggerated by sloppy research. A boat's disappearance, for example, would be reported, but its eventual (if belated) return to port may not have been.
+Some disappearances had, in fact, never happened. One plane crash was said to have taken place in 1937, off Daytona Beach, Florida, in front of hundreds of witnesses; a check of the local papers revealed nothing.[citation needed]
+The legend of the Bermuda Triangle is a manufactured mystery, perpetuated by writers who either purposely or unknowingly made use of misconceptions, faulty reasoning, and sensationalism.[1]
+In a 2013 study, the World Wide Fund for Nature identified the world's 10 most dangerous waters for shipping, but the Bermuda Triangle was not among them.[17][18]
+
+Further responses
+When the UK Channel 4 television program The Bermuda Triangle (1992)[19] was being produced by John Simmons of Geofilms for the Equinox series, the marine insurance market Lloyd's of London was asked if an unusually large number of ships had sunk in the Bermuda Triangle area. Lloyd's determined that large numbers of ships had not sunk there.[3] Lloyd's does not charge higher rates for passing through this area. United States Coast Guard records confirm their conclusion. In fact, the number of supposed disappearances is relatively insignificant considering the number of ships and aircraft that pass through on a regular basis.[1]
+
+The Coast Guard is also officially skeptical of the Triangle, noting that they collect and publish, through their inquiries, much documentation contradicting many of the incidents written about by the Triangle authors. In one such incident involving the 1972 explosion and sinking of the tanker V. A. Fogg, the Coast Guard photographed the wreck and recovered several bodies,[20] in contrast with one Triangle author's claim that all the bodies had vanished, with the exception of the captain, who was found sitting in his cabin at his desk, clutching a coffee cup.[12] In addition, V. A. Fogg sank off the coast of Texas, nowhere near the commonly accepted boundaries of the Triangle.
+
+The Nova/Horizon episode The Case of the Bermuda Triangle, aired on June 27, 1976, was highly critical, stating that "When we've gone back to the original sources or the people involved, the mystery evaporates. Science does not have to answer questions about the Triangle because those questions are not valid in the first place ... Ships and planes behave in the Triangle the same way they behave everywhere else in the world."[2]
+
+Skeptical researchers, such as Ernest Taves[21] and Barry Singer,[22] have noted how mysteries and the paranormal are very popular and profitable. This has led to the production of vast amounts of material on topics such as the Bermuda Triangle. They were able to show that some of the pro-paranormal material is often misleading or inaccurate, but its producers continue to market it. Accordingly, they have claimed that the market is biased in favor of books, TV specials, and other media that support the Triangle mystery, and against well-researched material if it espouses a skeptical viewpoint.
+
+Benjamin Radford, an author and scientific paranormal investigator, noted in an interview on the Bermuda Triangle that it could be very difficult locating an aircraft lost at sea due to the vast search area, and although the disappearance might be mysterious, that did not make it paranormal or unexplainable. Radford further noted the importance of double-checking information as the mystery surrounding the Bermuda Triangle had been created by people who had neglected to do so.[23]
+
+Hypothetical explanation attempts
+Persons accepting the Bermuda Triangle as a real phenomenon have offered a number of explanatory approaches.
+
+Paranormal explanations
+Triangle writers have used a number of supernatural concepts to explain the events. One explanation pins the blame on leftover technology from the mythical lost continent of Atlantis. Sometimes connected to the Atlantis story is the submerged rock formation known as the Bimini Road off the island of Bimini in the Bahamas, which is in the Triangle by some definitions. Followers of the purported psychic Edgar Cayce take his prediction that evidence of Atlantis would be found in 1968, as referring to the discovery of the Bimini Road. Believers describe the formation as a road, wall, or other structure, but the Bimini Road is of natural origin.[24]
+
+Other writers attribute the events to UFOs.[25][26] Charles Berlitz, author of various books on anomalous phenomena, lists several theories attributing the losses in the Triangle to anomalous or unexplained forces.[13]
+
+Natural explanations
+Compass variations
+Compass problems are one of the cited phrases in many Triangle incidents. While some have theorized that unusual local magnetic anomalies may exist in the area,[27] such anomalies have not been found. Compasses have natural magnetic variations in relation to the magnetic poles, a fact which navigators have known for centuries. Magnetic (compass) north and geographic (true) north are exactly the same only for a small number of places – for example, as of 2000, in the United States, only those places on a line running from Wisconsin to the Gulf of Mexico.[28] But the public may not be as informed, and think there is something mysterious about a compass "changing" across an area as large as the Triangle, which it naturally will.[1]
+
+
+False-color image of the Gulf Stream flowing north through the western Atlantic Ocean. (NASA)
+Gulf Stream
+The Gulf Stream is a major surface current, primarily driven by thermohaline circulation that originates in the Gulf of Mexico and then flows through the Straits of Florida into the North Atlantic. In essence, it is a river within an ocean, and, like a river, it can and does carry floating objects. It has a maximum surface velocity of about 2 m/s (6.6 ft/s).[29] A small plane making a water landing or a boat having engine trouble can be carried away from its reported position by the current.
+
+Human error
+One of the most cited explanations in official inquiries as to the loss of any aircraft or vessel is human error.[30] Human stubbornness may have caused businessman Harvey Conover to lose his sailing yacht, Revonoc, as he sailed into the teeth of a storm south of Florida on January 1, 1958.[31]
+
+Violent weather
+Hurricanes are powerful storms that form in tropical waters and have historically cost thousands of lives and caused billions of dollars in damage. The sinking of Francisco de Bobadilla's Spanish fleet in 1502 was the first recorded instance of a destructive hurricane. These storms have in the past caused a number of incidents related to the Triangle.
+
+A powerful downdraft of cold air was suspected to be a cause in the sinking of Pride of Baltimore on May 14, 1986. The crew of the sunken vessel noted the wind suddenly shifted and increased velocity from 32 km/h (20 mph) to 97–145 km/h (60–90 mph). A National Hurricane Center satellite specialist, James Lushine, stated "during very unstable weather conditions the downburst of cold air from aloft can hit the surface like a bomb, exploding outward like a giant squall line of wind and water."[32] A similar event occurred to Concordia in 2010, off the coast of Brazil. Scientists are currently investigating whether "hexagonal" clouds may be the source of these up-to-170 mph (270 km/h) "air bombs".[33]
+
+Methane hydrates
+Main article: Methane clathrate
+
+Worldwide distribution of confirmed or inferred offshore gas hydrate-bearing sediments, 1996.
+Source: United States Geological Survey
+An explanation for some of the disappearances has focused on the presence of large fields of methane hydrates (a form of natural gas) on the continental shelves.[34] Laboratory experiments carried out in Australia have proven that bubbles can, indeed, sink a scale model ship by decreasing the density of the water;[35][36][37] any wreckage consequently rising to the surface would be rapidly dispersed by the Gulf Stream. It has been hypothesized that periodic methane eruptions (sometimes called "mud volcanoes") may produce regions of frothy water that are no longer capable of providing adequate buoyancy for ships. If this were the case, such an area forming around a ship could cause it to sink very rapidly and without warning.
+
+Publications by the USGS describe large stores of undersea hydrates worldwide, including the Blake Ridge area, off the coast of the southeastern United States.[38] However, according to the USGS, no large releases of gas hydrates are believed to have occurred in the Bermuda Triangle for the past 15,000 years.[3]
+
+Notable incidents
+Main article: List of Bermuda Triangle incidents
+USS Cyclops
+Main article: USS Cyclops (AC-4)
+The incident resulting in the single largest loss of life in the history of the US Navy not related to combat occurred when the collier Cyclops, carrying a full load of manganese ore and with one engine out of action, went missing without a trace with a crew of 309 sometime after March 4, 1918, after departing the island of Barbados. Although there is no strong evidence for any single theory, many independent theories exist, some blaming storms, some capsizing, and some suggesting that wartime enemy activity was to blame for the loss.[39][40] In addition, two of Cyclops's sister ships, Proteus and Nereus were subsequently lost in the North Atlantic during World War II. Both ships were transporting heavy loads of metallic ore similar to that which was loaded on Cyclops during her fatal voyage. In all three cases structural failure due to overloading with a much denser cargo than designed is considered the most likely cause of sinking.
+
+Carroll A. Deering
+Main article: Carroll A. Deering
+
+Schooner Carroll A. Deering, as seen from the Cape Lookout lightvessel on January 29, 1921, two days before she was found deserted in North Carolina. (US Coast Guard)
+A five-masted schooner built in 1919, Carroll A. Deering was found hard aground and abandoned at Diamond Shoals, near Cape Hatteras, North Carolina, on January 31, 1921. Rumors and more at the time indicated Deering was a victim of piracy, possibly connected with the illegal rum-running trade during Prohibition, and possibly involving another ship, Hewitt, which disappeared at roughly the same time. Just hours later, an unknown steamer sailed near the lightship along the track of Deering, and ignored all signals from the lightship. It is speculated that Hewitt may have been this mystery ship, and possibly involved in Deering's crew disappearance.[41]
+
+Flight 19
+Main article: Flight 19
+
+US Navy Avengers, similar to those of Flight 19
+Flight 19 was a training flight of five TBM Avenger torpedo bombers that disappeared on December 5, 1945, while over the Atlantic. The squadron's flight plan was scheduled to take them due east from Fort Lauderdale for 141 mi (227 km), north for 73 mi (117 km), and then back over a final 140-mile (230-kilometre) leg to complete the exercise. The flight never returned to base. The disappearance was attributed by Navy investigators to navigational error leading to the aircraft running out of fuel.
+
+One of the search and rescue aircraft deployed to look for them, a PBM Mariner with a 13-man crew, also disappeared. A tanker off the coast of Florida reported seeing an explosion[42] and observing a widespread oil slick when fruitlessly searching for survivors. The weather was becoming stormy by the end of the incident.[43] According to contemporaneous sources the Mariner had a history of explosions due to vapour leaks when heavily loaded with fuel, as it might have been for a potentially long search-and-rescue operation.
+
+Star Tiger and Star Ariel
+Main articles: BSAA Star Tiger disappearance and BSAA Star Ariel disappearance
+G-AHNP Star Tiger disappeared on January 30, 1948, on a flight from the Azores to Bermuda; G-AGRE Star Ariel disappeared on January 17, 1949, on a flight from Bermuda to Kingston, Jamaica. Both were Avro Tudor IV passenger aircraft operated by British South American Airways.[44] Both planes were operating at the very limits of their range and the slightest error or fault in the equipment could keep them from reaching the small island.[1]
+
+Douglas DC-3
+Main article: 1948 Airborne Transport DC-3 (DST) disappearance
+On December 28, 1948, a Douglas DC-3 aircraft, number NC16002, disappeared while on a flight from San Juan, Puerto Rico, to Miami. No trace of the aircraft, or the 32 people on board, was ever found. A Civil Aeronautics Board investigation found there was insufficient information available on which to determine probable cause of the disappearance.[45]
+
+Connemara IV
+A pleasure yacht was found adrift in the Atlantic south of Bermuda on September 26, 1955; it is usually stated in the stories (Berlitz, Winer)[13][14] that the crew vanished while the yacht survived being at sea during three hurricanes. The 1955 Atlantic hurricane season shows Hurricane Ione passing nearby between 14 and 18 September, with Bermuda being affected by winds of almost gale force.[1] In his second book on the Bermuda Triangle, Winer quoted from a letter he had received from Mr J.E. Challenor of Barbados:[46]
+
+On the morning of September 22, Connemara IV was lying to a heavy mooring in the open roadstead of Carlisle Bay. Because of the approaching hurricane, the owner strengthened the mooring ropes and put out two additional anchors. There was little else he could do, as the exposed mooring was the only available anchorage. ... In Carlisle Bay, the sea in the wake of Hurricane Janet was awe-inspiring and dangerous. The owner of Connemara IV observed that she had disappeared. An investigation revealed that she had dragged her moorings and gone to sea.
+
+KC-135 Stratotankers
+On August 28, 1963, a pair of US Air Force KC-135 Stratotanker aircraft collided and crashed into the Atlantic 300 miles west of Bermuda.[47][48] Some writers [10][13][14] say that while the two aircraft did collide there were two distinct crash sites, separated by over 160 miles (260 km) of water. However, Kusche's research showed that the unclassified version of the Air Force investigation report revealed that the debris field defining the second "crash site" was examined by a search and rescue ship, and found to be a mass of seaweed and driftwood tangled in an old buoy.[1]
+
+See also
+icon	Oceans portal
+icon	Weather portal
+List of Bermuda Triangle incidents
+List of topics characterized as pseudoscience
+Nevada Triangle
+Devil's Sea (or Dragon's Triangle)
+Sargasso Sea
+SS Cotopaxi
+Vile vortex
+Hurricane Alley
+References
+Notes
+
+ Kusche, 1975.
+ "The Case of the Bermuda Triangle". NOVA / Horizon. 1976-06-27. PBS.
+ "Bermuda Triangle". Gas Hydrates at the USGS. Woods Hole. Archived from the original on 23 October 2012.
+ "E. V. W. Jones AP article". Retrieved 1 October 2014.
+ E.V.W. Jones (September 16, 1950). "Same Big World, Sea's Puzzles Still Baffle Men In Pushbutton Age". Associated Press.
+ "Has the 'Mystery' of the Bermuda Triangle Finally Been Solved?". 2016-10-24. Retrieved 24 October 2016.
+ George X. San (October 1952). "Sea Mystery at Our Back Door". Fate.
+ Allen W. Eckert (April 1962). "The Mystery of The Lost Patrol". American Legion Magazine. Cited in James R. Lewis (editor), Satanism Today: An Encyclopedia of Religion, Folklore, and Popular Culture, page 72, segment by Jerome Clark (ABC-CLIO, Inc., 2001). ISBN 1-57607-292-4
+ Diana Formisano Willett, Paranormal Fright, p. 9 (AuthorHouse, 2013), ISBN 978-1-4817-3268-0
+ Gaddis, Vincent (1964), "The Deadly Bermuda Triangle", Argosy
+ Vincent Gaddis (1965). Invisible Horizons.
+ Spencer, 1969.
+ Berlitz, 1974.
+ Winer 1974
+ "Strange fish: the scientifiction of Charles F. Berlitz, 1913–2003". Skeptic. Altadena, CA. March 2004.
+ "Frequently Asked Questions: Bermuda Triangle Fact Sheet" (PDF). US Department of Defense. 1998. Archived from the original (PDF) on 2016-11-21.
+ "Study finds shipwrecks threaten precious seas". BBC News/science. 7 June 2013. Retrieved 7 June 2013.
+ "Bermuda Triangle doesn't make the cut on list of world's most dangerous oceans". The Christian Science Monitor. 2013-06-10. Retrieved 22 March 2016.
+ "Equinox: The Bermuda Triangle". Archived from the original on 2009-05-27. Retrieved 2012-12-06.
+ "V A Fogg" (PDF). USCG. Retrieved 2012-12-06.
+ Taves, Ernest H. (1978). The Skeptical Inquirer. 111 (1): 75–76. Missing or empty |title= (help)
+ Singer, Barry (1979). The Humanist. XXXIX (3): 44–45. Missing or empty |title= (help)
+ Radford, Benjamin. "Lessons From A Middle School Bermuda Triangle Q&A". Center for Inquiry. Archived from the original on 21 November 2019. Retrieved 21 November 2019.
+ Shinn, Eugene A. (January 2004). "A Geologist's Adventures with Bimini Beachrock and Atlantis True Believers". Skeptical Inquirer. Amherst, New York: Committee for Skeptical Inquiry. Archived from the original on April 6, 2007.
+ "UFO over Bermuda Triangle". Ufos.about.com. June 29, 2008. Retrieved June 1, 2009.
+ Cochran-Smith, Marilyn (2003). "Bermuda Triangle: dichotomy, mythology, and amnesia". Journal of Teacher Education. Thousand Oaks, California: SAGE Publications. 54 (4): 275. doi:10.1177/0022487103256793.
+ "Bermuda Triangle". US Navy. Retrieved 2009-05-26.
+ "National Geomagnetism Program | Charts | North America | Declination" (PDF). United States Geological Survey. Archived from the original (PDF) on 2010-05-27. Retrieved 2010-02-28.
+ Phillips, Pamela. "The Gulf Stream". USNA/Johns Hopkins. Retrieved August 2, 2007.
+ Mayell, Hillary (15 December 2003). "Bermuda Triangle: Behind the Intrigue". National Geographic News. National Geographic Society. National Geographic Partners, LLC. Retrieved 26 May 2009.
+ Scott, Captain Thomas A. (1994). Histories & Mysteries: The Shipwrecks of Key Largo (1st ed.). Best Publishing Company. p. 124. ISBN 0941332330.
+ "Downdraft likely sank clipper, The Miami News, May 23, 1986, p. 6A". Retrieved 1 October 2014.
+ Kenny Walter (24 October 2016). "Bermuda Triangle Mystery Explained". RandD Magazine. Retrieved 2016-10-24.
+ Gruy, H. J. (March 1998). "Office of Scientific & Technical Information, OSTI, U.S. Department of Energy, DOE". Petroleum Engineer International. OTSI. 71 (3). OSTI 616279.
+ "Could methane bubbles sink ships?". Monash Univ.
+ Jason Dowling (2003-10-23). "Bermuda Triangle mystery solved? It's a load of gas". The Age.
+ Terrence Aym (2010-08-06). "How Brilliant Computer Scientists Solved the Bermuda Triangle Mystery". Salem-News.com.
+ Paull, C.K.; W.P., D. (1981). "Appearance and distribution of the gas hydrate reflection in the Blake Ridge region, offshore southeastern United States". Gas Hydrates at the USGS. Woods Hole. MF-1252. Archived from the original on 2012-02-18.
+ "Bermuda Triangle". D Merrill. Archived from the original on 2002-11-24.
+ "Myths and Folklore of Bermuda". Bermuda Cruises. Archived from the original on 2009-06-10.
+ "Carroll A Deering". Graveyard of the Atlantic. Archived from the original on 2005-08-28.
+ "The Loss of Flight 19". history.navy.mil.
+ "The Disappearance of Flight 19". Bermuda-Triangle.Org. Archived from the original on 22 July 2012. Retrieved 26 June 2018.
+ "The Tudors". Bermuda-Triangle.Org. Archived from the original on 23 July 2012. Retrieved 26 June 2018.
+ "Airborne Transport, Miami, December 1948" (PDF). Aviation Safety. Archived from the original (PDF) on 2007-01-03. Retrieved 2015-10-05.
+ Winer 1975, pp. 95–96
+ Accident description for 61-0322 at the Aviation Safety Network. Retrieved on 2 February 2013.
+ Accident description for 61-0319 at the Aviation Safety Network. Retrieved on 2 February 2013.
+Bibliography
+The incidents cited above, apart from the official documentation, come from the following works. Some incidents mentioned as having taken place within the Triangle are found only in these sources:
+
+Berg, Daniel (2000). Bermuda Shipwrecks. East Rockaway, NY: Aqua Explorers. ISBN 0-9616167-4-1.
+Berlitz, Charles (1974). The Bermuda Triangle (1st ed.). Doubleday. ISBN 0-385-04114-4.
+Group, David (1984). The Evidence for the Bermuda Triangle. Wellingborough, Northamptonshire: Aquarian Press. ISBN 0-85030-413-X.
+Jeffrey, Adi-Kent Thomas (1975). The Bermuda Triangle. ISBN 0-446-59961-1.
+Kusche, Lawrence David (1975). The Bermuda Triangle Mystery Solved. Buffalo, NY: Prometheus Books. ISBN 0-87975-971-2.
+Quasar, Gian J. (2003). Into the Bermuda Triangle: Pursuing the Truth Behind the World's Greatest Mystery. International Marine / Ragged Mountain Press. ISBN 0-07-142640-X. Reprinted in paperback in 2005; ISBN 0-07-145217-6.
+Spencer, John Wallace (1969). Limbo Of The Lost. ISBN 0-686-10658-X.
+Winer, Richard (1974). The Devil's Triangle. ISBN 0-553-10688-0.
+Winer, Richard (1975). The Devil's Triangle 2. ISBN 0-553-02464-7.
+Further reading
+
+Newspaper articles
+ProQuest has newspaper source material for many incidents, archived in Portable Document Format (PDF). The newspapers include The New York Times, The Washington Post, and The Atlanta Constitution. To access this website, registration is required, usually through a library connected to a college or university.
+
+Flight 19
+
+"Great Hunt On For 27 Navy Fliers Missing In Five Planes Off Florida", The New York Times, December 7, 1945.
+"Wide Hunt For 27 Men In Six Navy Planes", The Washington Post, December 7, 1945.
+"Fire Signals Seen In Area Of Lost Men", The Washington Post, December 9, 1945.
+SS Cotopaxi
+
+"Lloyd's posts Cotopaxi As 'Missing'", The New York Times, January 7, 1926.
+"Efforts To Locate Missing Ship Fail", The Washington Post, December 6, 1925.
+"Lighthouse Keepers Seek Missing Ship", The Washington Post, December 7, 1925.
+"53 On Missing Craft Are Reported Saved", The Washington Post, December 13, 1925.
+USS Cyclops (AC-4)
+
+"Cold High Winds Do $25,000 Damage", The Washington Post, March 11, 1918.
+"Collier Overdue A Month", The New York Times, April 15, 1918.
+"More Ships Hunt For Missing Cyclops", The New York Times, April 16, 1918.
+"Haven't Given Up Hope For Cyclops", The New York Times, April 17, 1918.
+"Collier Cyclops Is Lost; 293 Persons On Board; Enemy Blow Suspected", The Washington Post, April 15, 1918.
+"U.S. Consul Gottschalk Coming To Enter The War", The Washington Post, April 15, 1918.
+"Cyclops Skipper Teuton, 'Tis Said", The Washington Post, April 16, 1918.
+"Fate Of Ship Baffles", The Washington Post, April 16, 1918.
+"Steamer Met Gale On Cyclops' Course", The Washington Post, April 19, 1918.
+Carroll A. Deering
+
+"Piracy Suspected In Disappearance Of 3 American Ships", The New York Times, June 21, 1921.
+"Bath Owners Skeptical", The New York Times, June 22, 1921. piera antonella
+"Deering Skipper's Wife Caused Investigation", The New York Times, June 22, 1921.
+"More Ships Added To Mystery List", The New York Times, June 22, 1921.
+"Hunt On For Pirates", The Washington Post, June 21, 1921
+"Comb Seas For Ships", The Washington Post, June 22, 1921.
+"Port Of Missing Ships Claims 3000 Yearly", The Washington Post, July 10, 1921.
+Wreckers
+
+"'Wreckreation' Was The Name Of The Game That Flourished 100 Years Ago", The New York Times, March 30, 1969.
+S.S. Suduffco
+
+"To Search For Missing Freighter", The New York Times, April 11, 1926.
+"Abandon Hope For Ship", The New York Times, April 28, 1926.
+Star Tiger and Star Ariel
+
+"Hope Wanes in Sea Search For 28 Aboard Lost Airliner", The New York Times, January 31, 1948.
+"72 Planes Search Sea For Airliner", The New York Times, January 19, 1949.
+DC-3 Airliner NC16002 disappearance
+
+"30-Passenger Airliner Disappears In Flight From San Juan To Miami", The New York Times, December 29, 1948.
+"Check Cuba Report Of Missing Airliner", The New York Times, December 30, 1948.
+"Airliner Hunt Extended", The New York Times, December 31, 1948.
+Harvey Conover and Revonoc
+
+"Search Continuing For Conover Yawl", The New York Times, January 8, 1958.
+"Yacht Search Goes On", The New York Times, January 9, 1958.
+"Yacht Search Pressed", The New York Times, January 10, 1958.
+"Conover Search Called Off", The New York Times, January 15, 1958.
+KC-135 Stratotankers
+
+"Second Area Of Debris Found In Hunt For Jets", The New York Times, August 31, 1963.
+"Hunt For Tanker Jets Halted", The New York Times, September 3, 1963.
+"Planes Debris Found In Jet Tanker Hunt", The Washington Post, August 30, 1963.
+B-52 Bomber (Pogo 22)
+
+"U.S.-Canada Test Of Air Defence A Success", The New York Times, October 16, 1961.
+"Hunt For Lost B-52 Bomber Pushed In New Area", The New York Times, October 17, 1961.
+"Bomber Hunt Pressed", The New York Times, October 18, 1961.
+"Bomber Search Continuing", The New York Times, October 19, 1961.
+"Hunt For Bomber Ends", The New York Times, October 20, 1961.
+Charter vessel Sno'Boy
+
+"Plane Hunting Boat Sights Body In Sea", The New York Times, July 7, 1963.
+"Search Abandoned For 40 On Vessel Lost In Caribbean", The New York Times, July 11, 1963.
+"Search Continues For Vessel With 55 Aboard In Caribbean", The Washington Post, July 6, 1963.
+"Body Found In Search For Fishing Boat", The Washington Post, July 7, 1963.
+SS Marine Sulphur Queen
+
+"Tanker Lost In Atlantic; 39 Aboard", The Washington Post, February 9, 1963.
+"Debris Sighted In Plane Search For Tanker Missing Off Florida", The New York Times, February 11, 1963.
+"2.5 Million Is Asked In Sea Disaster", The Washington Post, February 19, 1963.
+"Vanishing Of Ship Ruled A Mystery", The New York Times, April 14, 1964.
+"Families Of 39 Lost At Sea Begin $20-Million Suit Here", The New York Times, June 4, 1969.
+"10-Year Rift Over Lost Ship Near End", The New York Times, February 4, 1973.
+SS Sylvia L. Ossa
+
+"Ship And 37 Vanish In Bermuda Triangle On Voyage To U.S.", The New York Times, October 18, 1976.
+"Ship Missing In Bermuda Triangle Now Presumed To Be Lost At Sea", The New York Times, October 19, 1976.
+"Distress Signal Heard From American Sailor Missing For 17 Days", The New York Times, October 31, 1976.
+Website links
+The following websites have either online material that supports the popular version of the Bermuda Triangle, or documents published from official sources as part of hearings or inquiries, such as those conducted by the United States Navy or United States Coast Guard. Copies of some inquiries are not online and may have to be ordered; for example, the losses of Flight 19 or USS Cyclops can be ordered direct from the United States Naval Historical Center.
+
+Text of Feb, 1964 Argosy Magazine article by Vincent Gaddis
+United States Coast Guard database of selected reports and inquiries
+U.S. Navy Historical Center Bermuda Triangle FAQ
+U.S. Navy Historical C/ The Bermuda Triangle: Startling New Secrets, Sci Fi Channel documentary (November 2005)
+Navy Historical Center: The Loss Of Flight 19
+on losses of heavy ships at sea
+Bermuda Shipwrecks
+Association of Underwater Explorers shipwreck listings page
+Dictionary of American Naval Fighting Ships
+"Summary of Missing Planes". Bermuda-Triangle.Org. Archived from the original on 3 June 2004. Retrieved 30 December 2007.
+Books
+Most of the works listed here are largely out of print. Copies may be obtained at your local library, or purchased used at bookstores, or through eBay or Amazon.com. These books are often the only source material for some of the incidents that have taken place within the Triangle.
+
+Into the Bermuda Triangle: Pursuing the Truth Behind the World's Greatest Mystery by Gian J. Quasar, International Marine/Ragged Mountain Press (2003) ISBN 0-07-142640-X; contains list of missing craft as researched in official records. (Reprinted in paperback (2005) ISBN 0-07-145217-6).
+The Bermuda Triangle, Charles Berlitz (ISBN 0-385-04114-4): Out of print.
+The Bermuda Triangle Mystery Solved (1975). Lawrence David Kusche (ISBN 0-87975-971-2)
+Limbo Of The Lost, John Wallace Spencer (ISBN 0-686-10658-X)
+The Evidence for the Bermuda Triangle (1984), David Group (ISBN 0-85030-413-X)
+The Final Flight (2006), Tony Blackman (ISBN 0-9553856-0-1). This book is a work of fiction.
+Bermuda Shipwrecks (2000), Daniel Berg(ISBN 0-9616167-4-1)
+The Devil's Triangle (1974), Richard Winer (ISBN 0-553-10688-0); this book sold well over a million copies by the end of its first year; to date there have been at least 17 printings.
+The Devil's Triangle 2 (1975), Richard Winer (ISBN 0-553-02464-7)
+From the Devil's Triangle to the Devil's Jaw (1977), Richard Winer (ISBN 0-553-10860-3)
+Ghost Ships: True Stories of Nautical Nightmares, Hauntings, and Disasters (2000), Richard Winer (ISBN 0-425-17548-0)
+The Bermuda Triangle (1975) by Adi-Kent Thomas Jeffrey (ISBN 0-446-59961-1)
+Bara, Mike (2019). The Triangle: The truth behind the world's most enduring mystery. Kempton, IL: Adventures Unlimited. p. 191. ASIN B07SVG79C5.
+External links
+	Wikimedia Commons has media related to Bermuda Triangle.
+	Look up Bermuda Triangle in Wiktionary, the free dictionary.
+"Database of selected reports and inquiries". United States Coast Guard.
+Quasar, Gian. "Bermuda Triangle Mystery". Bermuda-Triangle.Org. Archived from the original on 20 July 2012.
+Quasar, Gian. "Gian Quasar's Bermuda Triangle". – updated version of Quasar's Bermuda Triangle information.
+"Bermuda Triangle FAQ". US Navy Historical Center.
+"Selective Bibliography". US Navy Historical Center. Archived from the original on 2006-07-09.
+"The Loss Of Flight 19". US Navy Historical Center.
+"On losses of heavy ships at sea".
+"Bermuda Shipwrecks".
+Barnette, Michael C. "Shipwreck listings page". Association of Underwater Explorers.
+SigmaDocumentaries. "The Mystery of the Bermuda Triangle". Sigma Documentaries.
+Dunning, Brian (20 November 2012). "Skeptoid #337: The Bermuda Triangle and the Devil's Sea". Skeptoid. Retrieved 15 June 2017.
+vte
+List of Bermuda Triangle incidents
+
+
+
+Etymology
+The Mariana Trench is named after the nearby Mariana Islands, which are named Las Marianas in honour of Spanish Queen Mariana of Austria, widow of Philip IV of Spain. The islands are part of the island arc that is formed on an over-riding plate, called the Mariana Plate (also named for the islands), on the western side of the trench.
+
+Geology
+
+The Pacific plate is subducted beneath the Mariana Plate, creating the Mariana trench, and (further on) the arc of the Mariana Islands, as water trapped in the plate is released and explodes upward to form island volcanoes and earthquakes .
+The Mariana Trench is part of the Izu-Bonin-Mariana subduction system that forms the boundary between two tectonic plates. In this system, the western edge of one plate, the Pacific Plate, is subducted (i.e., thrust) beneath the smaller Mariana Plate that lies to the west. Crustal material at the western edge of the Pacific Plate is some of the oldest oceanic crust on earth (up to 170 million years old), and is, therefore, cooler and denser; hence its great height difference relative to the higher-riding (and younger) Mariana Plate. The deepest area at the plate boundary is the Mariana Trench proper.
+
+The movement of the Pacific and Mariana plates is also indirectly responsible for the formation of the Mariana Islands. These volcanic islands are caused by flux melting of the upper mantle due to the release of water that is trapped in minerals of the subducted portion of the Pacific Plate.
+
+Research history
+
+Ocean trenches in the western Pacific
+See also: Challenger Deep
+The trench was first sounded during the Challenger expedition in 1875, using a weighted rope, which recorded a depth of 4,475 fathoms (8,184 metres; 26,850 feet).[11] In 1877, a map was published called Tiefenkarte des Grossen Ozeans ("Depth map of the Great Ocean") by Petermann, which showed a Challenger Tief ("Challenger deep") at the location of that sounding. In 1899, USS Nero, a converted collier, recorded a depth of 5,269 fathoms (9,636 metres; 31,614 feet).[12]
+
+In 1951, Challenger II surveyed the trench using echo sounding, a much more precise and vastly easier way to measure depth than the sounding equipment and drag lines used in the original expedition. During this survey, the deepest part of the trench was recorded when the Challenger II measured a depth of 5,960 fathoms (10,900 metres; 35,760 feet) at 11°19′N 142°15′E, known as the Challenger Deep.[13]
+
+In 1957, the Soviet vessel Vityaz reported a depth of 11,034 metres (36,201 ft) at a location dubbed the Mariana Hollow.[3]
+
+In 1962, the surface ship M.V. Spencer F. Baird recorded a maximum depth of 10,915 metres (35,810 ft) using precision depth gauges.
+
+In 1984, the Japanese survey vessel Takuyō (拓洋) collected data from the Mariana Trench using a narrow, multi-beam echo sounder; it reported a maximum depth of 10,924 metres (35,840 ft), also reported as 10,920 metres (35,830 ft) ±10 m (33 ft).[14] Remotely Operated Vehicle KAIKO reached the deepest area of the Mariana Trench and made the deepest diving record of 10,911 metres (35,797 ft) on 24 March 1995.[15]
+
+During surveys carried out between 1997 and 2001, a spot was found along the Mariana Trench that had depth similar to that of the Challenger Deep, possibly even deeper. It was discovered while scientists from the Hawaii Institute of Geophysics and Planetology were completing a survey around Guam; they used a sonar mapping system towed behind the research ship to conduct the survey. This new spot was named the HMRG (Hawaii Mapping Research Group) Deep, after the group of scientists who discovered it.[16]
+
+On 1 June 2009, mapping aboard the RV Kilo Moana (mothership of the Nereus vehicle), indicated a spot with a depth of 10,971 metres (35,994 ft). The sonar mapping of the Challenger Deep was possible by its Simrad EM120 sonar multibeam bathymetry system for deep water. The sonar system uses phase and amplitude bottom detection, with an accuracy of better than 0.2% of water depth across the entire swath (implying that the depth figure is accurate to ± 22 metres (72 ft)).[17][18]
+
+In 2011, it was announced at the American Geophysical Union Fall Meeting that a US Navy hydrographic ship equipped with a multibeam echosounder conducted a survey which mapped the entire trench to 100 metres (330 ft) resolution.[4] The mapping revealed the existence of four rocky outcrops thought to be former seamounts.[19]
+
+The Mariana Trench is a site chosen by researchers at Washington University and the Woods Hole Oceanographic Institution in 2012 for a seismic survey to investigate the subsurface water cycle. Using both ocean-bottom seismometers and hydrophones the scientists are able to map structures as deep as 97 kilometres (60 mi) beneath the surface.[20]
+
+Descents
+Ambox current red.svg
+This section needs to be updated. Please update this article to reflect recent events or newly available information. (June 2020)
+
+The bathyscaphe Trieste (designed by Auguste Piccard), the first manned vehicle to reach the bottom of the Mariana Trench.[21]
+Four manned descents and three unmanned descents have been achieved. The first was the manned descent by Swiss-designed, Italian-built, United States Navy-owned bathyscaphe Trieste which reached the bottom at 1:06 pm on 23 January 1960, with Don Walsh and Jacques Piccard on board.[13][22] Iron shot was used for ballast, with gasoline for buoyancy.[13] The onboard systems indicated a depth of 11,521 m (37,799 ft), but this was later revised to 10,916 m (35,814 ft).[23] The depth was estimated from a conversion of pressure measured and calculations based on the water density from sea surface to seabed.[22]
+
+This was followed by the unmanned ROVs Kaikō in 1996 and Nereus in 2009. The first three expeditions directly measured very similar depths of 10,902 to 10,916 m (35,768 to 35,814 ft). The fourth was made by Canadian film director James Cameron in 2012. On 26 March, he reached the bottom of the Mariana Trench in the submersible vessel Deepsea Challenger, diving to a depth of 10,908 m (35,787 ft).[24][25][26][27]
+
+In July 2015, members of the National Oceanic and Atmospheric Administration, Oregon State University, and the Coast Guard submerged a hydrophone into the deepest part of the Mariana Trench, the Challenger Deep, never having deployed one past a mile. The titanium-shelled hydrophone was designed to withstand the immense pressure 7 miles under.[28] Although researchers were unable to retrieve the hydrophone until November, the data capacity was full within the first 23 days. After months of analyzing the sounds, the experts were surprised to pick up natural sounds like earthquakes, a typhoon and baleen whales along with man-made sounds such as boats.[29] Due to the mission's success, the researchers announced plans to deploy a second hydrophone in 2017 for an extended period of time.
+
+Victor Vescovo achieved a new record descent to 10,927 metres (35,853 ft.), using the DSV Limiting Factor, a Triton 36000/2 model manufactured by Florida-based Triton Submarines. He dived again in May 2019 and became the first person to dive the Challenger Deep twice.[30][31]
+
+In May 2020, a joint project between the Russian shipbuilders, scientific teams of the Russian Academy of Sciences with the support of Russian Foundation for Advanced Research Projects and the Pacific Fleet submerged an autonomous underwater vehicle "Vityaz" to the bottom of the Mariana Trench at a depth of 10,028 metres. Vityaz is the first underwater vehicle (AUV) to operate autonomously at the extreme depths of the Mariana Trench. The duration of the mission, excluding diving and surfacing, was more than 3 hours. [32]
+
+Planned descents
+Ambox current red.svg
+This section needs to be updated. Please update this article to reflect recent events or newly available information. (December 2019)
+In April 2011, Richard Branson unveiled a new single-person submarine to go to the bottom of the Mariana Trench in the next two years.[33]
+
+As of February 2012, at least one other team was planning a piloted submarine to reach the bottom of the Mariana Trench.[34]
+
+Life
+The expedition conducted in 1960 claimed to have observed, with great surprise because of the high pressure, large creatures living at the bottom, such as a flatfish about 30 cm (12 in) long,[23] and shrimp.[35] According to Piccard, "The bottom appeared light and clear, a waste of firm diatomaceous ooze".[23] Many marine biologists are now skeptical of the supposed sighting of the flatfish, and it is suggested that the creature may instead have been a sea cucumber.[36][37] During the second expedition, the unmanned vehicle Kaikō collected mud samples from the seabed.[38] Tiny organisms were found to be living in those samples.
+
+In July 2011, a research expedition deployed untethered landers, called dropcams, equipped with digital video cameras and lights to explore this region of the deep sea.
+
+Among many other living organisms, some gigantic single-celled amoebas with a size of more than 10 cm (4 in), belonging to the class of monothalamea were observed.[39] Monothalamea are noteworthy for their size, their extreme abundance on the seafloor and their role as hosts for a variety of organisms.
+
+In December 2014, a new species of snailfish was discovered at a depth of 8,145 m (26,722 ft), breaking the previous record for the deepest living fish seen on video.[40]
+
+During the 2014 expedition, several new species were filmed including huge amphipods known as supergiants. Deep-sea gigantism is the process where species grow larger than their shallow water relatives.[40]
+
+In May 2017, an unidentified type of snailfish was filmed at a depth of 8,178 metres (26,800 ft).[41]
+
+Pollution
+In 2016, a research expedition looked at the chemical makeup of crustacean scavengers collected from the range of 7,841–10,250 metres within the trench. Within these organisms, the researchers found extremely elevated concentrations of PCBs, a chemical toxin banned for its environmental harm in the 1970s, concentrated at all depths within the sediment of the trench.[42] Further research has found that amphipods also ingest microplastics, with 100% of amphipods having at least one piece of synthetic material in their stomachs.[43][44]
+
+In 2019, Victor Vescovo reported finding a plastic bag and candy wrappers at the bottom of the trench.[30] That year, Scientific American also reported that carbon-14 from nuclear bomb testing has been found in the bodies of aquatic animals found in the trench.[45]
+
+Possible nuclear waste disposal site
+Like other oceanic trenches, the Mariana Trench has been proposed as a site for nuclear waste disposal in 1972,[46][47] in the hope that tectonic plate subduction occurring at the site might eventually push the nuclear waste deep into the Earth's mantle, the second layer of the Earth. However, ocean dumping of nuclear waste is prohibited by international law.[46][47][48] Furthermore, plate subduction zones are associated with very large megathrust earthquakes, the effects of which are unpredictable for the safety of long-term disposal of nuclear wastes within the hadopelagic ecosystem.[47]
+
+See also
+icon	Oceania portal
+Marianas Trench Marine National Monument, United States national monument at the trench. This National Monument protects 246,610 square kilometres (95,216 sq mi) of submerged lands and waters of the Mariana Archipelago. It includes some of the Mariana Trench, but not the deepest part, the Challenger Deep, which lies just outside the monument area.
+Notes
+ Mariana Trench is 10,994 m deep,[4] while Mount Everest is 8,848 m tall.[5] The difference is 2,146 m, or at least no less than 2,104 m, accounting for the combined 42 m uncertainty in the measurements.
+References
+ "NGA GeoNames Search". National Geospatial Agency. Retrieved 29 February 2016.
+ "So, How Deep Is the Mariana Trench?" (PDF). Center for Coastal & Ocean Mapping-Joint Hydrographic Center (CCOM/JHC), Chase Ocean Engineering Laboratory of the University of New Hampshire. 5 March 2014. Retrieved 20 May 2014.
+ "Mariana Trench". Encyclopædia Britannica. Encyclopædia Britannica.
+ "Scientists map Mariana Trench, deepest known section of ocean in the world". The Telegraph. Telegraph Media Group. 7 December 2011. Retrieved 23 June 2018.
+ "Official height for Everest set". BBC News. 8 April 2010. Retrieved 24 June 2018.
+ infoplease.com – The Temperature in the Mariana Trench, read 13 May 2012
+ "About the Monument – Mariana Trench". U.S. Fish and Wildlife Service.
+ "Giant amoeba found in Mariana Trench – 6.6 miles beneath the sea". Los Angeles Times. 26 October 2011. Retrieved 23 March 2012.
+ Choi, Charles Q. (17 March 2013). "Microbes Thrive in Deepest Spot on Earth". LiveScience. Retrieved 17 March 2013.
+ Glud, Ronnie; Wenzhöfer, Frank; Middleboe, Mathias; Oguri, Kazumasa; Turnewitsch, Robert; Canfield, Donald E.; Kitazato, Hiroshi (17 March 2013). "High rates of microbial carbon turnover in sediments in the deepest oceanic trench on Earth". Nature Geoscience. 6 (4): 284–288. Bibcode:2013NatGe...6..284G. doi:10.1038/ngeo1773.
+ "About the Mariana Trench – DEEPSEA CHALLENGE Expedition". Deepseachallenge.com. 26 March 2012. Archived from the original on 28 June 2013. Retrieved 8 July 2013.
+ Theberge, A. (24 March 2009). "Thirty Years of Discovering the Mariana Trench". Hydro International. Retrieved 31 July 2010.
+ "The Mariana Trench – Exploration". marianatrench.com.
+ Tani, S. "Continental shelf survey of Japan" (PDF). Archived from the original (PDF) on 9 March 2011. Retrieved 24 December 2010.
+ Development and Construction of Launcher System of 10000m‐Class Remotely Operated Vehicle KAIKO Mitsubishi Heavy Industry
+ Whitehouse, David (16 July 2003). "Sea floor survey reveals deep hole". BBC News. Retrieved 17 December 2011.
+ "Daily Reports for R/V KILO MOANA June and July 2009". University of Hawaii Marine Center. Archived from the original on 24 May 2012.
+ "Inventory of Scientific Equipment aboard the R/V KILO MOANA". University of Hawaii Marine Center. Archived from the original on 13 June 2010.
+ Duncan Geere (7 February 2012). "Four 'bridges' span the Mariana Trench". Wired. Condé Nast Digital. Archived from the original on 11 March 2012. Retrieved 23 March 2012.
+ "Seismic Survey at the Mariana Trench Will Follow Water Dragged Down into the Earth's Mantle". ScienceDaily. 22 March 2012. Retrieved 23 March 2012.
+ Strickland, Eliza (29 February 2012). "Don Walsh Describes the Trip to the Bottom of the Mariana Trench – IEEE Spectrum". Spectrum.ieee.org. Retrieved 8 July 2013.
+ "Mariana Trench". Earthquake Hazards Program. U.S. Geological Survey. 21 October 2009. Archived from the original on 18 March 2012. Retrieved 23 March 2012.
+ "NOAA Ocean Explorer: History: Quotations: Soundings, Sea-Bottom, and Geophysics". oceanexplorer.noaa.gov.
+ "A man took a submarine to the deepest place on Earth – and found trash".
+ AP Staff (25 March 2012). "James Cameron has reached deepest spot on Earth". NBC News. Retrieved 25 March 2012.
+ Broad, William J. (25 March 2012). "Filmmaker in Submarine Voyages to Bottom of Sea". New York Times. Retrieved 25 March 2012.
+ Than, Ker (25 March 2012). "James Cameron Completes Record-Breaking Mariana Trench Dive". National Geographic Society. Retrieved 25 March 2012.
+ Schneider, Kate (2016), "Eerie sounds from the bottom of the Earth", News.com.au.
+ Chappell, Bill (4 March 2016). "Deep-Sea Audio Recordings Reveal A Noisy Mariana Trench, Surprising Scientists". The Two-Way: Breaking News from NPR. National Public Radio. Retrieved 1 May 2016.
+ Street, Francesca (13 May 2019). "Deepest ocean dive recorded: How Victor Vescovo did it". CNN Travel. CNN. Retrieved 13 May 2019.
+ "Deepest Submarine Dive in History, Five Deeps Expedition Conquers Challenger Deep" (PDF). Retrieved 2 December 2019.
+ "Russian Submarine "Vityaz" Reached The Bottom Of The Mariana Trench". Russian Geographical Society. 13 May 2020. Retrieved 6 June 2020.
+ "Richard Branson plans deep-ocean submarine dives". Santa Rosa Press Democrat. 5 April 2011. Retrieved 7 August 2020.
+ "Deep Search". DOER Marine. 16 March 2011. Retrieved 2 December 2019.
+ "Bathyscaphe Trieste | Mariana Trench | Challenger Deep". Geology.com. Retrieved 1 March 2012.
+ "James Cameron dives deep for Avatar", Guardian, 18 January 2011
+ "James Cameron heads into the abyss", Nature, 19 March 2012
+ Woods, Michael; Mary B. Woods (2009). Seven Natural Wonders of the Arctic, Antarctica, and the Oceans. Twenty-First Century Books. p. 13. ISBN 978-0-8225-9075-0. Retrieved 23 March 2012.
+ "Giant amoebas discovered in the deepest ocean trench". Retrieved 26 March 2012.
+ Morelle, Rebecca (9 December 2014). "New record for deepest fish". BBC News. Retrieved 26 August 2017.
+ "Ghostly fish in Mariana Trench in the Pacific is deepest ever recorded". CBC News. 25 August 2017. Retrieved 26 August 2017.
+ Jamieson, Alan J.; Malkocs, Tamas; Piertney, Stuart B.; Fujii, Toyonobu; Zhang, Zulin (13 February 2017). "Bioaccumulation of persistent organic pollutants in the deepest ocean fauna". Nature Ecology & Evolution. 1 (3). doi:10.1038/s41559-016-0051. hdl:2164/9142. ISSN 2397-334X. PMID 28812719.
+ Jamieson, A. J.; Brooks, L. S. R.; Reid, W. D. K.; Piertney, S. B.; Narayanaswamy, B. E.; Linley, T. D. (28 February 2019). "Microplastics and synthetic particles ingested by deep-sea amphipods in six of the deepest marine ecosystems on Earth". Royal Society Open Science. 6 (2): 180667. Bibcode:2019RSOS....680667J. doi:10.1098/rsos.180667. ISSN 2054-5703. PMC 6408374. PMID 30891254.
+ Robbins, Gary (5 September 2019). "UCSD discovers surge in plastics pollution off Santa Barbara". Los Angeles Times. Retrieved 5 September 2019.
+ Levy, Adam,“Bomb Carbon” Has Been Found in Deep-Ocean Creatures, Scientific American, 15 May 2019
+ Hafemeister, David W. (2007). Physics of societal issues: calculations on national security, environment, and energy. Berlin: Springer. p. 187. ISBN 978-0-387-95560-5.
+ Kingsley, Marvin G.; Rogers, Kenneth H. (2007). Calculated risks: highly radioactive waste and homeland security. Aldershot, Hants, England: Ashgate. pp. 75–76. ISBN 978-0-7546-7133-6.
+ "Dumping and Loss overview". Oceans in the Nuclear Age. Archived from the original on 5 June 2011. Retrieved 18 September 2010.
+External links
