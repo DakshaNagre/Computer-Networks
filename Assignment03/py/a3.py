@@ -21,7 +21,6 @@ def udpClientA3(host, port, file):
     while data:
         clientSocket.sendto(data, (server, serverPort))
         data = file.read(buffersize)
-        time.sleep(0.02)
 
 
 def udpServerA3(port, file):
