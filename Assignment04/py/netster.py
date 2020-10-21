@@ -72,6 +72,14 @@ def main():
     # configure logging level based on verbose arg
     level = log.DEBUG if args.verbose else log.INFO
 
+    # Testing Task 2 of Assignment 04
+
+    # if args.host:
+    #     udpClientTask2(1235)
+    # else:
+    #     udpServerTask2()
+    #     exit(1)
+
     f = None
     # open the file if specified
     if args.file:
@@ -79,18 +87,24 @@ def main():
             mode = "rb"
             if args.host:
                 f = open(args.file, mode)
-                udpClientA3(args.host, 1235, f)
+                # Testing Task 2 of Assignment 04
+                udpClientTask2(args.host, 1235, f)
+                # f = open(args.file, mode)
+                # udpClientA3(args.host, 1235, f)
             else:
                 mode = "wb"
                 f = open("tempServerWrites", "wb")
-                udpServerA3(1235, f)
-                f.close()
+                # Testing Task 2 of Assignment 04
+                udpServerTask2(1235, f)
+                # f = open("tempServerWrites", "wb")
+                # udpServerA3(1235, f)
+                # f.close()
         except Exception as e:
             print("Could not open file: {}".format(e))
             exit(1)
 
-    # Here we determine if we are a client or a server depending
-    # on the presence of a "host" argument.
+        # Here we determine if we are a client or a server depending
+        # on the presence of a "host" argument.
     elif args.host:
         # log.basicConfig(format='%(levelname)s:client: %(message)s',
         #                 level=level)
@@ -106,8 +120,8 @@ def main():
         else:
             run_tcpServer(args.host, args.port)
 
-    if args.file:
-        f.close()
+    # if args.file:
+    #     f.close()
 
 
 if __name__ == "__main__":
