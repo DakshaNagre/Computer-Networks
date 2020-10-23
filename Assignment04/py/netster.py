@@ -81,24 +81,40 @@ def main():
     #     exit(1)
 
     f = None
+
     # open the file if specified
     if args.file:
         try:
             mode = "rb"
+            # Client
             if args.host:
                 f = open(args.file, mode)
-                # Testing Task 2 of Assignment 04
-                udpClientTask2(args.host, 1235, f)
-                # f = open(args.file, mode)
-                # udpClientA3(args.host, 1235, f)
+                # Task 2 - Implement alternating bit, stop-and-wait protocol
+                if args.rudp == 1:
+                    udpClientTask2(args.host, 1235, f)
+                # Task 3 - Implement go-back-N protocol
+                elif args.rudp == 2:
+                    f = open(args.file, mode)
+                    udpClientTask3(args.host, 1235, f)
+                # Task 1
+                else:
+                    # f = open(args.file, mode)
+                    udpClientA3(args.host, 1235, f)
+            # Server
             else:
                 mode = "wb"
                 f = open("tempServerWrites", "wb")
-                # Testing Task 2 of Assignment 04
-                udpServerTask2(1235, f)
-                # f = open("tempServerWrites", "wb")
-                # udpServerA3(1235, f)
-                # f.close()
+                # Task 2 - Implement alternating bit, stop-and-wait protocol
+                if args.rudp == 1:
+                    udpServerTask2(1235, f)
+                # Task 3 - Implement go-back-N protocol
+                elif args.rudp == 2:
+                    udpServerTask3(1235, f)
+                # Task 1
+                else:
+                    # f = open("tempServerWrites", "wb")
+                    udpServerA3(1235, f)
+                    f.close()
         except Exception as e:
             print("Could not open file: {}".format(e))
             exit(1)

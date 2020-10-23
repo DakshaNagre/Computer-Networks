@@ -78,6 +78,7 @@ def udpClientTask2(host, port, file):
             else:
                 seq = "0"
             data = file.read(buffersize)
+    clientSocket.close()
 
 # Used by Task 2
 
@@ -116,15 +117,19 @@ def udpServerTask2(port, file):
         if data and pktseq == seq:
             file.write(data)
             sendAckPacket(seq, serverSocket, addr, "ACK")
-            seq += 1
+            if seq == '0':
+                seq = '1'
+            else:
+                seq = '0'
         elif not data:
             file.close()
+            serverSocket.close()
             break
 
 # Task 3:
 
 
-def clientTask3(file, host, port):
+def udpClientTask3(host, port, file):
     defaultwindowsize = 4
     # stores the window start
     base = 0
@@ -137,53 +142,63 @@ def clientTask3(file, host, port):
     seq = 0
     nextseq = 0
     sleeptime = 0.5
-    # timeout = 0.5
+    timeout = 0.05
+    print("Hello, I am a UDP Client Task 3")
 
     # Reading data, creating packets and storing in packetlist
     while True:
         data = file.read(buffersize)
         if not data:
             break
-        packet = seq + "NACK"
+        packet = str(seq) + "NACK"
         packet = packet.encode() + data
         packetlist.append(packet)
         seq += 1
 
     packetlistsize = len(packetlist)
-    print(packetlistsize, " to send")
+    print(packetlistsize, "packets to send")
 
     windowsize = min(defaultwindowsize, packetlistsize)
 
     # _thread.start_new_thread(receiveACK, (clientSocket, timeout, hs))
 
     while base < packetlistsize:
-        _thread.allocate_lock().acquire()
-
         # sending packets
         while nextseq < base + windowsize:
             sendPacketTask3(
-                clientSocket, packetlist[nextseq], server, serverPort, seq)
-            print("Sending packet, seq no. :", nextseq)
+                clientSocket, packetlist[nextseq], server, serverPort, nextseq)
+            print("Sent packet, seq no. :", nextseq)
             nextseq += 1
 
-        startTime = time.time()
+        startTime = float(time.time())
+        ackpktlist = receiveACK(clientSocket, startTime, timeout, windowsize)
 
-        while (not timeoutfun(startTime, timeout)):
-            # _thread.allocate_lock().release()
-            time.sleep(sleeptime)
-            # _thread.allocate_lock().acquire()
+        if len(ackpktlist) != windowsize:
+            # ACK packets were not received.
+            # Hence, resetting nextseq to base and sending packets again.
+            nextseq = base
+        else:
+            base = nextseq
+            windowsize = min(defaultwindowsize, packetlistsize - nextseq)
 
-            if timeoutfun(startTime, timeout):
-                ackpktlist = receiveACK(clientSocket, startTime, timeout)
+    sendPacketTask3(
+        clientSocket, packetlist[nextseq-1], server, serverPort, nextseq)
 
-                print("!!!!!!!!!!!! TIMED OUT !!!!!!!!!!!!")
-                if len(ackpktlist) != windowsize:
-                    # ACK packets were not received.
-                    # Hence, resetting nextseq to base and sending packets again.
-                    nextseq = base
-            else:
-                base = nextseq
-                windowsize = min(defaultwindowsize, packetlistsize - base)
+    # while (not timeoutfun(startTime, timeout)):
+    #     time.sleep(sleeptime)
+
+    #     if timeoutfun(startTime, timeout):
+    #         ackpktlist = receiveACK(clientSocket, startTime, timeout)
+
+    #         print("!!!!!!!!!!!! TIMED OUT !!!!!!!!!!!!")
+    #         if len(ackpktlist) != windowsize:
+    #             # ACK packets were not received.
+    #             # Hence, resetting nextseq to base and sending packets again.
+    #             nextseq = base
+    #     else:
+    #         base = nextseq
+    #         windowsize = min(defaultwindowsize, packetlistsize - base)
+    clientSocket.close()
     file.close()
 
 
@@ -193,41 +208,56 @@ def udpServerTask3(port, file):
     serverPort = 1235
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
-    print("Hello, I am a UDP Server Task 2")
+    print("Hello, I am a UDP Server Task 3")
     while True:
         data, addr = serverSocket.recvfrom(1024)
+        if not data:
+            serverSocket.close()
+            break
         data = data.decode()
-        pktseq = data[0:1]
-        data = data[5:len(data)]
+
+        if seq <= 9:
+            pktseq = int(data[0:1])
+            data = data[5:len(data)]
+        elif seq > 9 and seq <= 99:
+            pktseq = int(data[0:2])
+            data = data[6:len(data)]
+        elif seq > 99 and seq <= 999:
+            pktseq = int(data[0:3])
+            data = data[7:len(data)]
         data = data.encode()
         print("Received packet with seq",
               pktseq, " Expected is", seq)
-        if data and pktseq == seq:
-            file.write(data)
+        if pktseq == seq:
             sendAckPacket(seq, serverSocket, addr, "ACK")
-
-        elif not data:
-            file.close()
+            seq += 1
+            file.write(data)
+            data = None
+        else:
+            print("Received wrong packet, seq :", pktseq)
+            sendAckPacket(seq, serverSocket, addr, "NACK")
             break
+    serverSocket.close()
+    file.close()
 
 
 def timeoutfun(start, duration):
-    if time.time() - start >= duration:
+    if float(time.time()) - float(start) >= float(duration):
+        print("Time is : " + time.time())
         return True
     else:
         return False
 
 
-def receiveACK(clientSocket, startTime, timeout):
+def receiveACK(clientSocket, startTime, timeout, pktcount):
     ackpktlist = []
-
-    while True and not timeoutfun(startTime, timeout):
+    while pktcount > 0 and not timeoutfun(startTime, timeout):
         ackPacket, addr = clientSocket.recvfrom(1024)
         ackPacket = ackPacket.decode("utf-8")
         pktseq = int(ackPacket[0:1])
         print("ACK packet received, seq is :", pktseq)
+        pktcount -= 1
         ackpktlist.append(pktseq)
-
     return ackpktlist
 
 
