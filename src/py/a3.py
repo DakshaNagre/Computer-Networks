@@ -46,6 +46,7 @@ def udpServerA3(port, file, filename):
             serverSocket.settimeout(6)
             data, addr = serverSocket.recvfrom(1024)
     except Exception as e:
+        print("file transfer successful")
         file.close()
         serverSocket.close()
 
@@ -134,6 +135,7 @@ def udpServerTask2(port, file):
                 serverSocket.close()
                 break
     except Exception as e:
+        print("file transfer successful")
         file.close()
         serverSocket.close()
 
@@ -257,6 +259,7 @@ def udpServerTask3(port, file):
             print("Received wrong packet, seq :", pktseq)
             sendAckPacket(seq, serverSocket, addr, "NACK")
             # break
+    print("file transfer successful")
     serverSocket.close()
     file.close()
 
