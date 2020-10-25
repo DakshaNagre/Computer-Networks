@@ -18,7 +18,6 @@ def udpClientA3(host, port, file, filename):
     serverPort = int(port)
     clientSocket = socket(AF_INET, SOCK_DGRAM)
     buffersize = 1024
-    file = open(filename, "rb")
 
     print("Hello, I am a client")
 

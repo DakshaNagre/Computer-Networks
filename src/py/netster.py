@@ -72,14 +72,6 @@ def main():
     # configure logging level based on verbose arg
     level = log.DEBUG if args.verbose else log.INFO
 
-    # Testing Task 2 of Assignment 04
-
-    # if args.host:
-    #     udpClientTask2(1235)
-    # else:
-    #     udpServerTask2()
-    #     exit(1)
-
     f = None
 
     # open the file if specified
@@ -103,7 +95,7 @@ def main():
             # Server
             else:
                 mode = "wb"
-                f = open("tempServerWrites", "wb")
+                f = open(args.file, "wb")
                 # Task 1
                 if args.rudp == 0:
                     udpServerA3(1235, f, args.file)
