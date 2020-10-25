@@ -7,7 +7,7 @@ from a2 import *
 from a3 import *
 
 DEFAULT_PORT = 12345
-timeout = 3
+timeout = 6
 
 # If we are a server, launch the appropriate methods to handle server
 # functionality based on the input arguments.
@@ -99,7 +99,7 @@ def main():
                 # Task 1
                 else:
                     # f = open(args.file, mode)
-                    udpClientA3(args.host, 1235, f)
+                    udpClientA3(args.host, 1235, f, args.file)
             # Server
             else:
                 mode = "wb"
@@ -113,8 +113,8 @@ def main():
                 # Task 1
                 else:
                     # f = open("tempServerWrites", "wb")
-                    udpServerA3(1235, f)
-                    f.close()
+                    udpServerA3(1235, f, args.file)
+                    # f.close()
         except Exception as e:
             print("Could not open file: {}".format(e))
             exit(1)
