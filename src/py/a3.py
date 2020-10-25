@@ -40,15 +40,15 @@ def udpServerA3(port, file, filename):
     print("Hello, I am a UDP Server Task 1")
     file = open("tempServerWrites", "wb")
     data, addr = serverSocket.recvfrom(1024)
-    try:
-        while data:
-            file.write(data)
-            serverSocket.settimeout(6)
-            data, addr = serverSocket.recvfrom(1024)
-    except Exception as e:
-        print("file transfer successful")
-        file.close()
-        serverSocket.close()
+    # try:
+    while data:
+        file.write(data)
+        serverSocket.settimeout(6)
+        data, addr = serverSocket.recvfrom(1024)
+    # except Exception as e:
+    print("file transfer successful")
+    file.close()
+    serverSocket.close()
 
 # Task 2
 
@@ -113,31 +113,31 @@ def udpServerTask2(port, file):
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a UDP Server Task 2")
-    try:
-        while True:
-            data, addr = serverSocket.recvfrom(1024)
-            data = data.decode()
-            pktseq = data[0:1]
-            data = data[5:len(data)]
-            data = data.encode()
-            print("Received packet with seq",
-                  pktseq, " Expected is", seq)
-            serverSocket.settimeout(6)
-            if data and pktseq == seq:
-                file.write(data)
-                sendAckPacket(seq, serverSocket, addr, "ACK")
-                if seq == '0':
-                    seq = '1'
-                else:
-                    seq = '0'
-            elif not data:
-                file.close()
-                serverSocket.close()
-                break
-    except Exception as e:
-        print("file transfer successful")
-        file.close()
-        serverSocket.close()
+    # try:
+    while True:
+        data, addr = serverSocket.recvfrom(1024)
+        data = data.decode()
+        pktseq = data[0:1]
+        data = data[5:len(data)]
+        data = data.encode()
+        print("Received packet with seq",
+              pktseq, " Expected is", seq)
+        # serverSocket.settimeout(6)
+        if data and pktseq == seq:
+            file.write(data)
+            sendAckPacket(seq, serverSocket, addr, "ACK")
+            if seq == '0':
+                seq = '1'
+            else:
+                seq = '0'
+        elif not data:
+            file.close()
+            serverSocket.close()
+            break
+    # except Exception as e:
+    print("file transfer successful")
+    file.close()
+    serverSocket.close()
 
 
 # Task 3:
