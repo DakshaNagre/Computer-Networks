@@ -20,7 +20,7 @@ def udpClientA3(host, port, file, filename):
     buffersize = 1024
     file = open(filename, "rb")
 
-    print("Hello, I am a UDP Client Task 1")
+    print("Hello, I am a client")
     data = file.read(buffersize)
     while data:
         clientSocket.sendto(data, (server, serverPort))
@@ -32,13 +32,13 @@ def udpClientA3(host, port, file, filename):
 def udpServerA3(port, file, filename):
     serverPort = int(port)
     serverPort = 1235
-    timeout = float(10)
+    # timeout = float(10)
     # Creating the UDP socket
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Binding it to the port
     serverSocket.bind(('', serverPort))
-    print("Hello, I am a UDP Server Task 1")
-    file = open("tempServerWrites", "wb")
+    print("Hello, I am a server")
+    # file = open("tempServerWrites", "wb")
     data, addr = serverSocket.recvfrom(1024)
     # try:
     while data:
