@@ -38,7 +38,7 @@ def udpServerA3(port, file, filename):
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Binding it to the port
     serverSocket.bind(('', serverPort))
-    timeout = 5
+    timeout = 0.5
 
     print("Hello, I am a server")
 
