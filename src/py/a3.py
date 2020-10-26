@@ -70,7 +70,7 @@ def udpClientTask2(host, port, file):
     buffersize = 1019
     seq = "0"
 
-    print("Hello, I am a UDP Client Task 2")
+    print("Hello, I am a client")
 
     data = file.read(buffersize)
     while data:
@@ -83,7 +83,7 @@ def udpClientTask2(host, port, file):
             pktseq = ackPacket[0:1]
             print("ACK packet received, seq is :",
                   pktseq, " Required seq is :", seq)
-        except Exception as e:
+        except socket.timeout:
             print("Timed out")
 
             #  Check if correct ACK is received
@@ -122,7 +122,7 @@ def udpServerTask2(port, file):
     timeout = 6
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
-    print("Hello, I am a UDP Server Task 2")
+    print("Hello, I am a server")
     # try:
     while True:
         data, addr = serverSocket.recvfrom(1024)
@@ -144,7 +144,7 @@ def udpServerTask2(port, file):
             file.close()
             serverSocket.close()
             break
-    # except Exception as e:
+    # except socket.timeout:
     print("file transfer successful")
     file.close()
     serverSocket.close()
