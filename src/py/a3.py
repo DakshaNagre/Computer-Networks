@@ -123,31 +123,30 @@ def udpServerTask2(port, file):
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a server")
-    # try:
-    while True:
-        data, addr = serverSocket.recvfrom(1024)
-        data = data.decode()
-        pktseq = data[0:1]
-        data = data[5:len(data)]
-        data = data.encode()
-        print("Received packet with seq",
-              pktseq, " Expected is", seq)
-        # serverSocket.settimeout(6)
-        if data and pktseq == seq:
-            file.write(data)
-            sendAckPacket(seq, serverSocket, addr, "ACK")
-            if seq == '0':
-                seq = '1'
-            else:
-                seq = '0'
-        elif not data:
-            file.close()
-            serverSocket.close()
-            break
-    # except socket.timeout:
-    print("file transfer successful")
-    file.close()
-    serverSocket.close()
+    try:
+        while True:
+            data, addr = serverSocket.recvfrom(1024)
+            data = data.decode()
+            pktseq = data[0:1]
+            data = data[5:len(data)]
+            data = data.encode()
+            print("Received packet with seq",
+                  pktseq, " Expected is", seq)
+            serverSocket.settimeout(0.05)
+            if data and pktseq == seq:
+                file.write(data)
+                sendAckPacket(seq, serverSocket, addr, "ACK")
+                if seq == '0':
+                    seq = '1'
+                else:
+                    seq = '0'
+            elif not data:
+                print("file transfer successful")
+                file.close()
+                serverSocket.close()
+                break
+    except socket.timeout:
+        serverSocket.close()
 
 
 # Task 3:
