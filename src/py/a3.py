@@ -40,30 +40,35 @@ def udpServerA3(port, file, filename):
     serverSocket.bind(('', serverPort))
     timeout = 0.05
 
-    # print("Hello, I am a server")
-
+    print("Hello, I am a server")
+    file = open(filename, "wb")
     data, addr = serverSocket.recvfrom(1024)
     file.write(data)
+    file.close()
     try:
         while data:
+
             ready = select([serverSocket], [], [], timeout)
             if ready[0]:
+                file = open(filename, "ab")
                 data, addr = serverSocket.recvfrom(1024)
                 file.write(data)
+                file.close()
             # else:
             #     # print("file transfer successful")
                 # file.close()
                 # break
-    except socket.timeout:
+    except Exception as e:
+        pass
+        # print(e)
         # print("file transfer successful")
 
         # serverSocket.close()
 
         # print("file transfer successful")
-        file.close()
+        # file.close()
 
-
-# Task 2
+        # Task 2
 
 
 def udpClientTask2(host, port, file):
