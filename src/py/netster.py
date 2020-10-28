@@ -94,8 +94,8 @@ def main():
 
             # Server
             else:
-                mode = "wb"
-                f = open(args.file, "wb")
+                mode = "ab"
+                f = open(args.file, "ab")
                 # Task 1
                 if args.rudp == 0:
                     udpServerA3(1235, f, args.file)
