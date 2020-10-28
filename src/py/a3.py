@@ -27,6 +27,7 @@ def udpClientA3(host, port, file, filename):
         data = file.read(buffersize)
 
     file.close()
+    print("file transfer successful")
 
 
 def udpServerA3(port, file, filename):
@@ -50,14 +51,16 @@ def udpServerA3(port, file, filename):
                 data, addr = serverSocket.recvfrom(1024)
                 file.write(data)
             else:
-                print("file transfer successful")
+                # print("file transfer successful")
                 file.close()
-                break
+                # break
     except socket.timeout:
-        serverSocket.close()
+        # print("file transfer successful")
+
+        # serverSocket.close()
 
         # print("file transfer successful")
-        # file.close()
+        file.close()
 
 
 # Task 2
