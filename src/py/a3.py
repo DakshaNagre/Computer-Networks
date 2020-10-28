@@ -28,7 +28,6 @@ def udpClientA3(host, port, file, filename):
 def udpServerA3(port, file, filename):
     serverPort = int(port)
     serverPort = 1235
-    # timeout = float(10)
     # Creating the UDP socket
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Binding it to the port
@@ -49,19 +48,8 @@ def udpServerA3(port, file, filename):
                 data, addr = serverSocket.recvfrom(1024)
                 file.write(data)
                 file.close()
-            # else:
-            #     # print("file transfer successful")
-                # file.close()
-                # break
     except Exception as e:
         pass
-        # print(e)
-        # print("file transfer successful")
-
-        # serverSocket.close()
-
-        # print("file transfer successful")
-        # file.close()
 
         # Task 2
 
