@@ -148,8 +148,8 @@ def udpServerTask2(port, file, filename):
                     seq = '0'
             elif not data:
                 print("file transfer successful")
-                serverSocket.close()
-                break
+                # serverSocket.close()
+                # break
     except Exception as e:
         pass
 
