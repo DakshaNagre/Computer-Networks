@@ -103,7 +103,7 @@ def main():
                     # f.close()
                 # Task 2 - Implement alternating bit, stop-and-wait protocol
                 elif args.rudp == 1:
-                    udpServerTask2(1235, f)
+                    udpServerTask2(1235, f, args.file)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
                     udpServerTask3(1235, f)

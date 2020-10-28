@@ -123,14 +123,15 @@ def sendAckPacket(seq, socket, addr, data):
     socket.sendto(packet, addr)
 
 
-def udpServerTask2(port, file):
+def udpServerTask2(port, file, filename):
 
     seq = '0'
     serverPort = 1235
-    timeout = 6
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a server")
+    file = open(filename, "wb")
+    file.close()
     try:
         while True:
             data, addr = serverSocket.recvfrom(1024)
@@ -142,7 +143,9 @@ def udpServerTask2(port, file):
                   pktseq, " Expected is", seq)
             serverSocket.settimeout(0.05)
             if data and pktseq == seq:
+                file = open(filename, "ab")
                 file.write(data)
+                file.close()
                 sendAckPacket(seq, serverSocket, addr, "ACK")
                 if seq == '0':
                     seq = '1'
@@ -150,11 +153,10 @@ def udpServerTask2(port, file):
                     seq = '0'
             elif not data:
                 print("file transfer successful")
-                file.close()
                 serverSocket.close()
                 break
-    except socket.timeout:
-        serverSocket.close()
+    except Exception as e:
+        pass
 
 
 # Task 3:
