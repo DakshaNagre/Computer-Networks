@@ -141,7 +141,7 @@ def udpServerTask2(port, file, filename):
             data = data.encode()
             print("Received packet with seq",
                   pktseq, " Expected is", seq)
-            serverSocket.settimeout(0.05)
+            serverSocket.settimeout(0.5)
             if data and pktseq == seq:
                 file = open(filename, "ab")
                 file.write(data)
