@@ -74,7 +74,7 @@ def udpClientTask2(host, port, file):
             pktseq = ackPacket[0:1]
             print("ACK packet received, seq is :",
                   pktseq, " Required seq is :", seq)
-        except Exception as e:
+        except socket.timeout:
             print("Timed out")
 
         #  Checking if correct ACK is received
