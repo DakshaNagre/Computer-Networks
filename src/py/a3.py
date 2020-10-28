@@ -1,8 +1,3 @@
-# Here is the starting point for your Assignment 03 definitions. Add the
-# appropriate comment header as defined in the code formatting guidelines
-# Here is the starting point for your Assignment 03 definitions. Add the
-# appropriate comment header as defined in the code formatting guidelines
-
 from socket import *
 import sys
 import threading
@@ -38,7 +33,7 @@ def udpServerA3(port, file, filename):
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Binding it to the port
     serverSocket.bind(('', serverPort))
-    timeout = 0.05
+    timeout = 0.5
 
     print("Hello, I am a server")
     file = open(filename, "wb")
