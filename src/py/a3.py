@@ -1,3 +1,8 @@
+# Here is the starting point for your Assignment 03 definitions. Add the
+# appropriate comment header as defined in the code formatting guidelines
+# Here is the starting point for your Assignment 03 definitions. Add the
+# appropriate comment header as defined in the code formatting guidelines
+
 from socket import *
 import sys
 import threading
@@ -33,36 +38,30 @@ def udpServerA3(port, file, filename):
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Binding it to the port
     serverSocket.bind(('', serverPort))
-    timeout = 0.05
-
     print("Hello, I am a server")
     file = open(filename, "wb")
-    data, addr = serverSocket.recvfrom(1024)
-    file.write(data)
     file.close()
     try:
-        while data:
+        while True:
+            data, addr = serverSocket.recvfrom(1024)
+            file = open(filename, "ab")
+            file.write(data)
+            file.close()
+            serverSocket.settimeout(0.5)
 
-            ready = select([serverSocket], [], [], timeout)
-            if ready[0]:
-                file = open(filename, "ab")
-                data, addr = serverSocket.recvfrom(1024)
-                file.write(data)
-                file.close()
+            # while data:
+            #     ready = select([serverSocket], [], [], timeout)
+            #     if ready[0]:
+            #         file = open(filename, "ab")
+            #         data, addr = serverSocket.recvfrom(1024)
+            #         file.write(data)
+            #         file.close()
             # else:
             #     # print("file transfer successful")
-                # file.close()
-                # break
+            # file.close()
+            # break
     except Exception as e:
         pass
-        # print(e)
-        # print("file transfer successful")
-
-        # serverSocket.close()
-
-        # print("file transfer successful")
-        # file.close()
-
         # Task 2
 
 
