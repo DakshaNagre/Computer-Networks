@@ -19,7 +19,7 @@ def udpClientA3(host, port, file, filename):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
     buffersize = 1024
 
-    # print("Hello, I am a client")
+    print("Hello, I am a client")
 
     data = file.read(buffersize)
     while data:
@@ -27,13 +27,12 @@ def udpClientA3(host, port, file, filename):
         data = file.read(buffersize)
 
     file.close()
-    # print("file transfer successful")
+    print("file transfer successful")
 
 
 def udpServerA3(port, file, filename):
     serverPort = int(port)
     serverPort = 1235
-    # timeout = float(10)
     # Creating the UDP socket
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Binding it to the port
@@ -48,20 +47,9 @@ def udpServerA3(port, file, filename):
             file.write(data)
             file.close()
             serverSocket.settimeout(0.5)
-
-            # while data:
-            #     ready = select([serverSocket], [], [], timeout)
-            #     if ready[0]:
-            #         file = open(filename, "ab")
-            #         data, addr = serverSocket.recvfrom(1024)
-            #         file.write(data)
-            #         file.close()
-            # else:
-            #     # print("file transfer successful")
-            # file.close()
-            # break
     except Exception as e:
         pass
+
         # Task 2
 
 
@@ -82,16 +70,19 @@ def udpClientTask2(host, port, file):
         try:
             ackPacket, addr = clientSocket.recvfrom(1024)
             ackPacket = ackPacket.decode("utf-8")
+            # Verifying sequence with Ack packet sequence
             pktseq = ackPacket[0:1]
             print("ACK packet received, seq is :",
                   pktseq, " Required seq is :", seq)
-        except socket.timeout:
+        except Exception as e:
             print("Timed out")
 
-            #  Check if correct ACK is received
+        #  Checking if correct ACK is received
+        # If corrct sequence is not present then, sending the packet again.
         if pktseq != seq:
             sendPacket(clientSocket, data, server, serverPort, seq)
         else:
+            # Toggling the sequence
             if seq == "0":
                 seq = "1"
             else:
@@ -130,17 +121,23 @@ def udpServerTask2(port, file, filename):
         while True:
             data, addr = serverSocket.recvfrom(1024)
             data = data.decode()
+            # Fetching sequence number
             pktseq = data[0:1]
+            # Fetching data
             data = data[5:len(data)]
+            # Converting data back to bytes
             data = data.encode()
             print("Received packet with seq",
                   pktseq, " Expected is", seq)
             serverSocket.settimeout(0.5)
+            # Writing data in file only is packet sequence matches to the correct sequence.
             if data and pktseq == seq:
                 file = open(filename, "ab")
                 file.write(data)
                 file.close()
+                # Sending ACK packet
                 sendAckPacket(seq, serverSocket, addr, "ACK")
+                # Toggling sequence
                 if seq == '0':
                     seq = '1'
                 else:
