@@ -49,7 +49,7 @@ def run_udpClient(host, port):
 
 def main():
     parser = argparse.ArgumentParser(description="SICE Network netster")
-    parser.add_argument('-p', '--port', type=str, default=DEFAULT_PORT,
+    parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT,
                         help='listen on/connect to port <port> (default={}'
                         .format(DEFAULT_PORT))
     parser.add_argument('-i', '--iface', type=str, default='0.0.0.0',

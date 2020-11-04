@@ -162,7 +162,8 @@ def udpClientTask3(host, port, file):
     # stores the window start
     base = 0
     windowsize = 0
-    server = 'localhost'
+    server = host
+    # server = 'localhost'
     serverPort = int(port)
     clientSocket = socket(AF_INET, SOCK_DGRAM)
     buffersize = 1019
@@ -220,11 +221,11 @@ def udpClientTask3(host, port, file):
 def udpServerTask3(port, file, filename):
 
     seq = 0
-    serverPort = int(port)
+    print("server side type is :", type(port))
+    serverPort = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a UDP Server Task 3")
-    print("serverPortport", serverPort, "port", port)
     file = open(filename, "wb")
     file.close()
     try:
