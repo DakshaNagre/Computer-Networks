@@ -199,9 +199,7 @@ def udpClientTask3(host, port, file):
             sentpacketlist.insert(counter, nextseq)
             counter += 1
             nextseq += 1
-
-        startTime = float(time.time())
-        ackpktlist = receiveACK(clientSocket, startTime,
+        ackpktlist = receiveACK(clientSocket,
                                 timeout, windowsize, sentpacketlist)
 
         if len(ackpktlist) != windowsize:
@@ -292,14 +290,6 @@ def udpServerTask3(port, file, filename):
     # file.close()
 
 
-# def timeoutfun(start, duration):
-#     if float(time.time()) - float(start) >= float(duration):
-#         # print("Time is : " + time.time())
-#         return True
-#     else:
-#         return False
-
-
 def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort, sentpacketlist, ackpktlist):
 
     for i in range(len(ackpktlist)):
@@ -309,7 +299,7 @@ def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort
             # print("Sent Missing ACK packet again, seq is :", i)
 
 
-def receiveACK(clientSocket, startTime, timeout, pktcount, sentpacketlist):
+def receiveACK(clientSocket, timeout, pktcount, sentpacketlist):
     counter = 0
     ackpktlist = []
     try:
