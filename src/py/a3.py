@@ -234,13 +234,15 @@ def udpClientTask3(host, port, file):
     file.close()
 
 
-def udpServerTask3(port, file):
+def udpServerTask3(port, file, filename):
 
     seq = 0
     serverPort = 1235
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a UDP Server Task 3")
+    file = open(filename, "wb")
+    file.close()
     while True:
         data, addr = serverSocket.recvfrom(1024)
         if not data:
@@ -267,8 +269,10 @@ def udpServerTask3(port, file):
         if pktseq == seq:
             sendAckPacket(seq, serverSocket, addr, "ACK")
             seq += 1
+            file = open(filename, "ab")
             file.write(data)
-            data = None
+            file.close()
+            # data = None
         else:
             print("Received wrong packet, seq :", pktseq)
             sendAckPacket(seq, serverSocket, addr, "NACK")

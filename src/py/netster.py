@@ -106,7 +106,7 @@ def main():
                     udpServerTask2(1235, f, args.file)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    udpServerTask3(1235, f)
+                    udpServerTask3(1235, f, args.file)
 
         except Exception as e:
             print("Could not open file: {}".format(e))
