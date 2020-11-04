@@ -213,23 +213,6 @@ def udpClientTask3(host, port, file):
             base = nextseq
             windowsize = min(defaultwindowsize, packetlistsize - nextseq)
 
-        # sendPacketTask3(
-        #     clientSocket, packetlist[nextseq-1], server, serverPort, nextseq)
-
-    # while (not timeoutfun(startTime, timeout)):
-    #     time.sleep(sleeptime)
-
-    #     if timeoutfun(startTime, timeout):
-    #         ackpktlist = receiveACK(clientSocket, startTime, timeout)
-
-    #         print("!!!!!!!!!!!! TIMED OUT !!!!!!!!!!!!")
-    #         if len(ackpktlist) != windowsize:
-    #             # ACK packets were not received.
-    #             # Hence, resetting nextseq to base and sending packets again.
-    #             nextseq = base
-    #     else:
-    #         base = nextseq
-    #         windowsize = min(defaultwindowsize, packetlistsize - base)
     clientSocket.close()
     file.close()
 
