@@ -79,6 +79,11 @@ def main():
         try:
             mode = "rb"
             # Client
+            port = 1235
+            if args.port:
+                port = args.port
+            else:
+                port = 1235
             if args.host:
                 f = open(args.file, mode)
                 # Task 1
@@ -89,12 +94,16 @@ def main():
                     udpClientTask2(args.host, 1235, f)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    udpClientTask3(args.host, 1235, f)
+                    udpClientTask3(args.host, port, f)
 
             # Server
             else:
                 mode = "ab"
-                # f = open(args.file, "ab")
+                port = 1235
+                if args.port:
+                    port = args.port
+                else:
+                    port = 1235
                 f = None
                 # Task 1
                 if args.rudp == 0:
@@ -105,7 +114,7 @@ def main():
                     udpServerTask2(1235, f, args.file)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    udpServerTask3(1235, f, args.file)
+                    udpServerTask3(port, f, args.file)
 
         except Exception as e:
             print("Could not open file: {}".format(e))
