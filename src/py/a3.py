@@ -243,43 +243,46 @@ def udpServerTask3(port, file, filename):
     # print("Hello, I am a UDP Server Task 3")
     file = open(filename, "wb")
     file.close()
-    while True:
-        data, addr = serverSocket.recvfrom(1024)
-        if not data:
-            serverSocket.close()
-            break
-        data = data.decode()
+    try:
+        while True:
+            data, addr = serverSocket.recvfrom(1024)
+            if not data:
+                serverSocket.close()
+                break
+            data = data.decode()
+            serverSocket.settimeout(0.5)
+            if seq <= 9:
+                pktseq = int(data[0:1])
+                data = data[5:len(data)]
+            elif seq > 9 and seq <= 99:
+                pktseq = int(data[0:2])
+                data = data[6:len(data)]
+            elif seq > 99 and seq <= 999:
+                pktseq = int(data[0:3])
+                data = data[7:len(data)]
+            elif seq > 999 and seq <= 9999:
+                pktseq = int(data[0:4])
+                data = data[8:len(data)]
 
-        if seq <= 9:
-            pktseq = int(data[0:1])
-            data = data[5:len(data)]
-        elif seq > 9 and seq <= 99:
-            pktseq = int(data[0:2])
-            data = data[6:len(data)]
-        elif seq > 99 and seq <= 999:
-            pktseq = int(data[0:3])
-            data = data[7:len(data)]
-        elif seq > 999 and seq <= 9999:
-            pktseq = int(data[0:4])
-            data = data[8:len(data)]
-
-        data = data.encode()
-        # print("Received packet with seq",
-        #   pktseq, " Expected is", seq)
-        if pktseq == seq:
-            sendAckPacket(seq, serverSocket, addr, "ACK")
-            seq += 1
-            file = open(filename, "ab")
-            file.write(data)
-            file.close()
-            # data = None
-        else:
-            # print("Received wrong packet, seq :", pktseq)
-            sendAckPacket(seq, serverSocket, addr, "NACK")
-            # break
+            data = data.encode()
+            # print("Received packet with seq",
+            #   pktseq, " Expected is", seq)
+            if pktseq == seq:
+                sendAckPacket(seq, serverSocket, addr, "ACK")
+                seq += 1
+                file = open(filename, "ab")
+                file.write(data)
+                file.close()
+                # data = None
+            else:
+                # print("Received wrong packet, seq :", pktseq)
+                sendAckPacket(seq, serverSocket, addr, "NACK")
+    except Exception as e:
+        pass
+        # break
     # print("file transfer successful")
-    serverSocket.close()
-    file.close()
+    # serverSocket.close()
+    # file.close()
 
 
 def timeoutfun(start, duration):
