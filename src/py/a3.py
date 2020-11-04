@@ -318,7 +318,7 @@ def receiveACK(clientSocket, startTime, timeout, pktcount, sentpacketlist):
         elif 999 < sentpacketlist[counter] <= 9999:
             pktseq = int(ackPacket[0:4])
 
-        print("ACK packet received, seq is :", pktseq)
+        # print("ACK packet received, seq is :", pktseq)
         pktcount -= 1
         counter += 1
         ackpktlist.append(pktseq)
