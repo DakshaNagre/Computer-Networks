@@ -292,12 +292,12 @@ def udpServerTask3(port, file, filename):
     # file.close()
 
 
-def timeoutfun(start, duration):
-    if float(time.time()) - float(start) >= float(duration):
-        # print("Time is : " + time.time())
-        return True
-    else:
-        return False
+# def timeoutfun(start, duration):
+#     if float(time.time()) - float(start) >= float(duration):
+#         # print("Time is : " + time.time())
+#         return True
+#     else:
+#         return False
 
 
 def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort, sentpacketlist, ackpktlist):
