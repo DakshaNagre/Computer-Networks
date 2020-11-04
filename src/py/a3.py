@@ -220,7 +220,7 @@ def udpClientTask3(host, port, file):
 def udpServerTask3(port, file, filename):
 
     seq = 0
-    serverPort = port
+    serverPort = int(port)
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a UDP Server Task 3")

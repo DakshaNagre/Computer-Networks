@@ -89,7 +89,7 @@ def main():
                     udpClientTask2(args.host, 1235, f)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    udpClientTask3(args.host, p, f)
+                    udpClientTask3(args.host, args.port, f)
 
             # Server
             else:
@@ -104,7 +104,7 @@ def main():
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
                     print("From netster, port is", args.port)
-                    udpServerTask3(p, f, args.file)
+                    udpServerTask3(args.port, f, args.file)
 
         except Exception as e:
             print("Could not open file: {}".format(e))
