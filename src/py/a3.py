@@ -164,7 +164,8 @@ def udpClientTask3(host, port, file):
     windowsize = 0
     server = host
     # server = 'localhost'
-    serverPort = int(port)
+    # serverPort = int(port)
+    serverPort = 1235
     clientSocket = socket(AF_INET, SOCK_DGRAM)
     buffersize = 1019
     packetlist = []
@@ -222,7 +223,8 @@ def udpServerTask3(port, file, filename):
 
     seq = 0
     print("server side type is :", type(port))
-    serverPort = port
+    serverPort = 1235
+    # serverPort = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a UDP Server Task 3")
