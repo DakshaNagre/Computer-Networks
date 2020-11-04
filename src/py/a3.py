@@ -220,11 +220,11 @@ def udpClientTask3(host, port, file):
 def udpServerTask3(port, file, filename):
 
     seq = 0
-    # serverPort = 1235
-    serverPort = int(port)
+    serverPort = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
     print("Hello, I am a UDP Server Task 3")
+    print("serverPortport", serverPort, "port", port)
     file = open(filename, "wb")
     file.close()
     try:

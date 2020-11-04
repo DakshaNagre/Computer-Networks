@@ -79,11 +79,6 @@ def main():
         try:
             mode = "rb"
             # Client
-            port = 1235
-            if args.port:
-                port = args.port
-            else:
-                port = 1235
             if args.host:
                 f = open(args.file, mode)
                 # Task 1
@@ -94,27 +89,22 @@ def main():
                     udpClientTask2(args.host, 1235, f)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    udpClientTask3(args.host, port, f)
+                    udpClientTask3(args.host, p, f)
 
             # Server
             else:
                 mode = "ab"
-                port = 1235
-                if args.port:
-                    port = args.port
-                else:
-                    port = 1235
                 f = None
                 # Task 1
                 if args.rudp == 0:
                     udpServerA3(1235, f, args.file)
-                    # f.close()
                 # Task 2 - Implement alternating bit, stop-and-wait protocol
                 elif args.rudp == 1:
                     udpServerTask2(1235, f, args.file)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    udpServerTask3(port, f, args.file)
+                    print("From netster, port is", args.port)
+                    udpServerTask3(p, f, args.file)
 
         except Exception as e:
             print("Could not open file: {}".format(e))
