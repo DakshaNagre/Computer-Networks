@@ -113,7 +113,7 @@ def sendPacket(clientSocket, data, server, serverPort, seq):
 
 
 def sendAckPacket(seq, socket, addr, data):
-    print("Creating ACK packet seq is :", seq, " data is", data)
+    # print("Creating ACK packet seq is :", seq, " data is", data)
     packet = (str(seq) + data).encode()
     socket.sendto(packet, addr)
 
@@ -240,7 +240,7 @@ def udpServerTask3(port, file, filename):
     serverPort = 1235
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
-    print("Hello, I am a UDP Server Task 3")
+    # print("Hello, I am a UDP Server Task 3")
     file = open(filename, "wb")
     file.close()
     while True:
@@ -264,8 +264,8 @@ def udpServerTask3(port, file, filename):
             data = data[8:len(data)]
 
         data = data.encode()
-        print("Received packet with seq",
-              pktseq, " Expected is", seq)
+        # print("Received packet with seq",
+        #   pktseq, " Expected is", seq)
         if pktseq == seq:
             sendAckPacket(seq, serverSocket, addr, "ACK")
             seq += 1
@@ -274,17 +274,17 @@ def udpServerTask3(port, file, filename):
             file.close()
             # data = None
         else:
-            print("Received wrong packet, seq :", pktseq)
+            # print("Received wrong packet, seq :", pktseq)
             sendAckPacket(seq, serverSocket, addr, "NACK")
             # break
-    print("file transfer successful")
+    # print("file transfer successful")
     serverSocket.close()
     file.close()
 
 
 def timeoutfun(start, duration):
     if float(time.time()) - float(start) >= float(duration):
-        print("Time is : " + time.time())
+        # print("Time is : " + time.time())
         return True
     else:
         return False
