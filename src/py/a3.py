@@ -193,7 +193,7 @@ def udpClientTask3(host, port, file):
         while nextseq < base + windowsize:
             sendPacketTask3(
                 clientSocket, packetlist[nextseq], server, serverPort, nextseq)
-            print("Sent packet, seq no. :", nextseq)
+            # print("Sent packet, seq no. :", nextseq)
             sentpacketlist.insert(counter, nextseq)
             counter += 1
             nextseq += 1
@@ -299,7 +299,7 @@ def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort
         if ackpktlist[i] != sentpacketlist[i]:
             sendPacketTask3(
                 clientSocket, packetlist[i], server, serverPort, i)
-            print("Sent Missing ACK packet again, seq is :", i)
+            # print("Sent Missing ACK packet again, seq is :", i)
 
 
 def receiveACK(clientSocket, startTime, timeout, pktcount, sentpacketlist):
@@ -326,7 +326,7 @@ def receiveACK(clientSocket, startTime, timeout, pktcount, sentpacketlist):
 
 
 def sendPacketTask3(clientSocket, packet, server, serverPort, seq):
-    print("Sending packet to server with seq :", seq)
+    # print("Sending packet to server with seq :", seq)
     clientSocket.sendto(packet, (server, serverPort))
 
 # References:
