@@ -184,7 +184,7 @@ def udpClientTask3(host, port, file):
         seq += 1
 
     packetlistsize = len(packetlist)
-    print(packetlistsize, "packets to send")
+    # print(packetlistsize, "packets to send")
 
     windowsize = min(defaultwindowsize, packetlistsize)
     while base < packetlistsize:
