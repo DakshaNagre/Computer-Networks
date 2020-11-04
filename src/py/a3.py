@@ -240,7 +240,7 @@ def udpServerTask3(port, file, filename):
     serverPort = 1235
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     serverSocket.bind(('', serverPort))
-    # print("Hello, I am a UDP Server Task 3")
+    print("Hello, I am a UDP Server Task 3")
     file = open(filename, "wb")
     file.close()
     try:
@@ -250,7 +250,7 @@ def udpServerTask3(port, file, filename):
                 serverSocket.close()
                 break
             data = data.decode()
-            serverSocket.settimeout(0.5)
+            serverSocket.settimeout(5)
             if seq <= 9:
                 pktseq = int(data[0:1])
                 data = data[5:len(data)]
@@ -294,14 +294,13 @@ def udpServerTask3(port, file, filename):
                 file = open(filename, "ab")
                 file.write(data)
                 file.close()
-                # data = None
             else:
                 # print("Received wrong packet, seq :", pktseq)
                 sendAckPacket(seq, serverSocket, addr, "NACK")
     except Exception as e:
         pass
         # break
-    # print("file transfer successful")
+    print("file transfer successful")
     # serverSocket.close()
     # file.close()
 

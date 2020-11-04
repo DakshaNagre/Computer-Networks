@@ -89,7 +89,7 @@ def main():
                     udpClientTask2(args.host, 1235, f)
                 # Task 3 - Implement go-back-N protocol
                 elif args.rudp == 2:
-                    f = open(args.file, mode)
+                    # f = open(args.file, mode)
                     udpClientTask3(args.host, 1235, f)
 
             # Server
