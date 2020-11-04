@@ -167,13 +167,17 @@ def udpClientTask3(host, port, file):
     # serverPort = int(port)
     serverPort = 1235
     clientSocket = socket(AF_INET, SOCK_DGRAM)
-    buffersize = 1019
+    buffersize = 1017
     packetlist = []
     sentpacketlist = []
     seq = 0
     nextseq = 0
     timeout = 0.5
     print("Hello, I am a UDP Client Task 3")
+
+    packet = str("999") + "NACK"
+    packet = packet.encode()
+    print("!!!!!!!!!!!! size of packet is : ", len(packet))
 
     # Reading data, creating packets and storing in packetlist
     while True:
@@ -242,6 +246,7 @@ def udpServerTask3(port, file, filename):
             elif seq > 9 and seq <= 99:
                 pktseq = int(data[0:2])
                 data = data[6:len(data)]
+                print("Data is :", data)
             elif seq > 99 and seq <= 999:
                 pktseq = int(data[0:3])
                 data = data[7:len(data)]

@@ -21,3 +21,5 @@ src/py/__pycache__/a3.cpython-38.pyc
 Assignment04/src/py/url.txt
 src/py/url.txt
 src/py/url.txt
+src/py/__pycache__/a3.cpython-38.pyc
+*.pyc
