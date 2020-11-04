@@ -170,7 +170,7 @@ def udpClientTask3(host, port, file):
     sentpacketlist = []
     seq = 0
     nextseq = 0
-    timeout = 0.05
+    timeout = 0.5
     print("Hello, I am a UDP Client Task 3")
 
     # Reading data, creating packets and storing in packetlist
@@ -263,6 +263,27 @@ def udpServerTask3(port, file, filename):
             elif seq > 999 and seq <= 9999:
                 pktseq = int(data[0:4])
                 data = data[8:len(data)]
+            elif seq > 9999 and seq <= 99999:
+                pktseq = int(data[0:5])
+                data = data[9:len(data)]
+            elif seq > 99999 and seq <= 999999:
+                pktseq = int(data[0:6])
+                data = data[10:len(data)]
+            elif seq > 999999 and seq <= 999999:
+                pktseq = int(data[0:7])
+                data = data[11:len(data)]
+            elif seq > 9999999 and seq <= 9999999:
+                pktseq = int(data[0:8])
+                data = data[12:len(data)]
+            elif seq > 99999999 and seq <= 99999999:
+                pktseq = int(data[0:9])
+                data = data[13:len(data)]
+            elif seq > 999999999 and seq <= 999999999:
+                pktseq = int(data[0:10])
+                data = data[14:len(data)]
+            elif seq > 9999999999 and seq <= 9999999999:
+                pktseq = int(data[0:11])
+                data = data[15:len(data)]
 
             data = data.encode()
             # print("Received packet with seq",
