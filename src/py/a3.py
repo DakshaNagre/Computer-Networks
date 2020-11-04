@@ -338,6 +338,20 @@ def receiveACK(clientSocket, startTime, timeout, pktcount, sentpacketlist):
             pktseq = int(ackPacket[0:3])
         elif 999 < sentpacketlist[counter] <= 9999:
             pktseq = int(ackPacket[0:4])
+        elif 9999 < sentpacketlist[counter] <= 99999:
+            pktseq = int(ackPacket[0:5])
+        elif 99999 < sentpacketlist[counter] <= 999999:
+            pktseq = int(ackPacket[0:6])
+        elif 999999 < sentpacketlist[counter] <= 9999999:
+            pktseq = int(ackPacket[0:7])
+        elif 9999999 < sentpacketlist[counter] <= 99999999:
+            pktseq = int(ackPacket[0:8])
+        elif 99999999 < sentpacketlist[counter] <= 999999999:
+            pktseq = int(ackPacket[0:9])
+        elif 999999999 < sentpacketlist[counter] <= 9999999999:
+            pktseq = int(ackPacket[0:10])
+        elif 9999999999 < sentpacketlist[counter] <= 99999999999:
+            pktseq = int(ackPacket[0:11])
 
         # print("ACK packet received, seq is :", pktseq)
         pktcount -= 1
