@@ -312,37 +312,40 @@ def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort
 def receiveACK(clientSocket, startTime, timeout, pktcount, sentpacketlist):
     counter = 0
     ackpktlist = []
-    while pktcount > 0 and not timeoutfun(startTime, timeout):
-        ackPacket, addr = clientSocket.recvfrom(1024)
-        ackPacket = ackPacket.decode("utf-8")
+    try:
+        while pktcount > 0:
+            ackPacket, addr = clientSocket.recvfrom(1024)
+            ackPacket = ackPacket.decode("utf-8")
 
-        if sentpacketlist[counter] <= 9:
-            pktseq = int(ackPacket[0:1])
-        elif 9 < sentpacketlist[counter] <= 99:
-            pktseq = int(ackPacket[0:2])
-        elif 99 < sentpacketlist[counter] <= 999:
-            pktseq = int(ackPacket[0:3])
-        elif 999 < sentpacketlist[counter] <= 9999:
-            pktseq = int(ackPacket[0:4])
-        elif 9999 < sentpacketlist[counter] <= 99999:
-            pktseq = int(ackPacket[0:5])
-        elif 99999 < sentpacketlist[counter] <= 999999:
-            pktseq = int(ackPacket[0:6])
-        elif 999999 < sentpacketlist[counter] <= 9999999:
-            pktseq = int(ackPacket[0:7])
-        elif 9999999 < sentpacketlist[counter] <= 99999999:
-            pktseq = int(ackPacket[0:8])
-        elif 99999999 < sentpacketlist[counter] <= 999999999:
-            pktseq = int(ackPacket[0:9])
-        elif 999999999 < sentpacketlist[counter] <= 9999999999:
-            pktseq = int(ackPacket[0:10])
-        elif 9999999999 < sentpacketlist[counter] <= 99999999999:
-            pktseq = int(ackPacket[0:11])
+            if sentpacketlist[counter] <= 9:
+                pktseq = int(ackPacket[0:1])
+            elif 9 < sentpacketlist[counter] <= 99:
+                pktseq = int(ackPacket[0:2])
+            elif 99 < sentpacketlist[counter] <= 999:
+                pktseq = int(ackPacket[0:3])
+            elif 999 < sentpacketlist[counter] <= 9999:
+                pktseq = int(ackPacket[0:4])
+            elif 9999 < sentpacketlist[counter] <= 99999:
+                pktseq = int(ackPacket[0:5])
+            elif 99999 < sentpacketlist[counter] <= 999999:
+                pktseq = int(ackPacket[0:6])
+            elif 999999 < sentpacketlist[counter] <= 9999999:
+                pktseq = int(ackPacket[0:7])
+            elif 9999999 < sentpacketlist[counter] <= 99999999:
+                pktseq = int(ackPacket[0:8])
+            elif 99999999 < sentpacketlist[counter] <= 999999999:
+                pktseq = int(ackPacket[0:9])
+            elif 999999999 < sentpacketlist[counter] <= 9999999999:
+                pktseq = int(ackPacket[0:10])
+            elif 9999999999 < sentpacketlist[counter] <= 99999999999:
+                pktseq = int(ackPacket[0:11])
 
-        # print("ACK packet received, seq is :", pktseq)
-        pktcount -= 1
-        counter += 1
-        ackpktlist.append(pktseq)
+            # print("ACK packet received, seq is :", pktseq)
+            pktcount -= 1
+            counter += 1
+            ackpktlist.append(pktseq)
+    except Exception as e:
+        pass
     return ackpktlist
 
 
