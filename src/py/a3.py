@@ -196,7 +196,7 @@ def udpClientTask3(host, port, file):
     while base < packetlistsize:
         counter = 0
         # sending packets
-        while nextseq < base + windowsize:
+        while nextseq < base + windowsize and nextseq < packetlistsize:
             sendPacketTask3(
                 clientSocket, packetlist[nextseq], server, serverPort, nextseq)
             print("Sent packet, seq no. :", nextseq,
@@ -214,9 +214,11 @@ def udpClientTask3(host, port, file):
             findMissingPacketsAndRetransmit(
                 clientSocket, packetlist, server, serverPort, sentpacketlist, ackpktlist)
             base = nextseq
+            windowsize -= 2
         else:
             base = nextseq
             windowsize = min(defaultwindowsize, packetlistsize - nextseq)
+            windowsize += 1
 
     clientSocket.close()
     file.close()
@@ -357,3 +359,4 @@ def sendPacketTask3(clientSocket, packet, server, serverPort, seq):
 # https://pypi.org/project/packet-python/
 # https://www.tutorialspoint.com/python3/python_multithreading.htm
 # https://stackoverflow.com/questions/52228001/basic-timer-in-python-3-7
+# https://github.com/8tiqa/go-back-n-udp
