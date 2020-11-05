@@ -175,10 +175,6 @@ def udpClientTask3(host, port, file):
     timeout = 5
     print("Hello, I am a UDP Client Task 3")
 
-    packet = str("1494") + "NACK"
-    packet = packet.encode()
-    print("!!!!!!!!!!!! size of packet is : ", len(packet))
-
     # Reading data, creating packets and storing in packetlist
     while True:
         data = file.read(buffersize)
@@ -285,17 +281,13 @@ def udpServerTask3(port, file, filename):
                 file = open(filename, "ab")
                 file.write(data)
                 file.close()
-                print("!!!!!!!!!!!!!!!!!Written pkt seq is :", pktseq)
+                print("Written pkt seq is :", pktseq)
             else:
                 print("Received wrong packet, seq :", pktseq)
                 sendAckPacket(seq, serverSocket, addr, "NACK")
     except Exception as e:
-        print("!!!!!!!!!!!!!!!e : ", e)
         pass
-        # break
     print("file transfer successful")
-    # serverSocket.close()
-    # file.close()
 
 
 def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort, sentpacketlist, ackpktlist):
