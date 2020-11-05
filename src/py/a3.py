@@ -167,7 +167,7 @@ def udpClientTask3(host, port, file):
     # serverPort = int(port)
     serverPort = 1235
     clientSocket = socket(AF_INET, SOCK_DGRAM)
-    buffersize = 1015
+    buffersize = 1017
     packetlist = []
     sentpacketlist = []
     seq = 0
@@ -175,7 +175,7 @@ def udpClientTask3(host, port, file):
     timeout = 0.5
     print("Hello, I am a UDP Client Task 3")
 
-    packet = str("99999") + "NACK"
+    packet = str("9999") + "NACK"
     packet = packet.encode()
     print("!!!!!!!!!!!! size of packet is : ", len(packet))
 
@@ -199,7 +199,7 @@ def udpClientTask3(host, port, file):
         while nextseq < base + windowsize:
             sendPacketTask3(
                 clientSocket, packetlist[nextseq], server, serverPort, nextseq)
-            # print("Sent packet, seq no. :", nextseq)
+            print("Sent packet, seq no. :", nextseq)
             sentpacketlist.insert(counter, nextseq)
             counter += 1
             nextseq += 1
@@ -246,7 +246,6 @@ def udpServerTask3(port, file, filename):
             elif seq > 9 and seq <= 99:
                 pktseq = int(data[0:2])
                 data = data[6:len(data)]
-                print("Data is :", data)
             elif seq > 99 and seq <= 999:
                 pktseq = int(data[0:3])
                 data = data[7:len(data)]
@@ -276,8 +275,8 @@ def udpServerTask3(port, file, filename):
                 data = data[15:len(data)]
 
             data = data.encode()
-            # print("Received packet with seq",
-            #   pktseq, " Expected is", seq)
+            print("Received packet with seq",
+                  pktseq, " Expected is", seq)
             if pktseq == seq:
                 sendAckPacket(seq, serverSocket, addr, "ACK")
                 seq += 1
@@ -285,9 +284,10 @@ def udpServerTask3(port, file, filename):
                 file.write(data)
                 file.close()
             else:
-                # print("Received wrong packet, seq :", pktseq)
+                print("Received wrong packet, seq :", pktseq)
                 sendAckPacket(seq, serverSocket, addr, "NACK")
     except Exception as e:
+        print("!!!!!!!!!!!!!!!e : ", e)
         pass
         # break
     print("file transfer successful")
@@ -301,7 +301,7 @@ def findMissingPacketsAndRetransmit(clientSocket, packetlist, server, serverPort
         if ackpktlist[i] != sentpacketlist[i]:
             sendPacketTask3(
                 clientSocket, packetlist[i], server, serverPort, i)
-            # print("Sent Missing ACK packet again, seq is :", i)
+            print("Sent Missing ACK packet again, seq is :", i)
 
 
 def receiveACK(clientSocket, timeout, pktcount, sentpacketlist):
@@ -335,7 +335,7 @@ def receiveACK(clientSocket, timeout, pktcount, sentpacketlist):
             elif 9999999999 < sentpacketlist[counter] <= 99999999999:
                 pktseq = int(ackPacket[0:11])
 
-            # print("ACK packet received, seq is :", pktseq)
+            print("ACK packet received, seq is :", pktseq)
             pktcount -= 1
             counter += 1
             ackpktlist.append(pktseq)
