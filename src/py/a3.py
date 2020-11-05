@@ -167,7 +167,7 @@ def udpClientTask3(host, port, file):
     # serverPort = int(port)
     serverPort = 1235
     clientSocket = socket(AF_INET, SOCK_DGRAM)
-    buffersize = 1017
+    buffersize = 1015
     packetlist = []
     sentpacketlist = []
     seq = 0
@@ -175,7 +175,7 @@ def udpClientTask3(host, port, file):
     timeout = 0.5
     print("Hello, I am a UDP Client Task 3")
 
-    packet = str("999") + "NACK"
+    packet = str("99999") + "NACK"
     packet = packet.encode()
     print("!!!!!!!!!!!! size of packet is : ", len(packet))
 
