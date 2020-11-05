@@ -205,16 +205,20 @@ def udpClientTask3(host, port, file):
 
         if len(ackpktlist) != windowsize:
             # ACK packets were not received.
-            # Hence, resetting nextseq to base and sending packets again.
-            # nextseq = base
+            # Hence, resetting nextseq to base, sending packets again and
+            # decreasing size of window to prevent network congestion
+
             findMissingPacketsAndRetransmit(
                 clientSocket, packetlist, server, serverPort, sentpacketlist, ackpktlist)
             base = nextseq
             windowsize -= 2
         else:
+            # ACK for the sent packets were successfully received.
+            # Hence, increasing the window size
+
             base = nextseq
             windowsize = min(defaultwindowsize, packetlistsize - nextseq)
-            windowsize += 1
+            windowsize += 2
 
     clientSocket.close()
     file.close()
