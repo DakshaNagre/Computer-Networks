@@ -5,6 +5,7 @@ import os
 import time
 import _thread
 from select import *
+import codecs
 
 
 def udpClientA3(host, port, file, filename):
@@ -172,10 +173,10 @@ def udpClientTask3(host, port, file):
     sentpacketlist = []
     seq = 0
     nextseq = 0
-    timeout = 0.5
+    timeout = 5
     print("Hello, I am a UDP Client Task 3")
 
-    packet = str("9999") + "NACK"
+    packet = str("1494") + "NACK"
     packet = packet.encode()
     print("!!!!!!!!!!!! size of packet is : ", len(packet))
 
@@ -199,7 +200,8 @@ def udpClientTask3(host, port, file):
         while nextseq < base + windowsize:
             sendPacketTask3(
                 clientSocket, packetlist[nextseq], server, serverPort, nextseq)
-            print("Sent packet, seq no. :", nextseq)
+            print("Sent packet, seq no. :", nextseq,
+                  " total packets :", packetlistsize)
             sentpacketlist.insert(counter, nextseq)
             counter += 1
             nextseq += 1
@@ -224,7 +226,6 @@ def udpClientTask3(host, port, file):
 def udpServerTask3(port, file, filename):
 
     seq = 0
-    print("server side type is :", type(port))
     serverPort = 1235
     # serverPort = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -238,7 +239,7 @@ def udpServerTask3(port, file, filename):
             if not data:
                 serverSocket.close()
                 break
-            data = data.decode()
+            data = data.decode('utf-8')
             serverSocket.settimeout(5)
             if seq <= 9:
                 pktseq = int(data[0:1])
@@ -283,6 +284,7 @@ def udpServerTask3(port, file, filename):
                 file = open(filename, "ab")
                 file.write(data)
                 file.close()
+                print("!!!!!!!!!!!!!!!!!Written pkt seq is :", pktseq)
             else:
                 print("Received wrong packet, seq :", pktseq)
                 sendAckPacket(seq, serverSocket, addr, "NACK")
