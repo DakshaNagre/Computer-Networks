@@ -181,7 +181,7 @@ def udpClientTask3(host, port, file):
         if not data:
             break
         packet = str(seq) + "NACK"
-        packet = packet.encode() + data
+        packet = packet.encode('latin-1') + data
         packetlist.append(packet)
         seq += 1
 
