@@ -172,7 +172,7 @@ def udpClientTask3(host, port, file):
     sentpacketlist = []
     seq = 0
     nextseq = 0
-    timeout = 5
+    timeout = 6
     print("Hello, I am a UDP Client Task 3")
 
     # Reading data, creating packets and storing in packetlist
@@ -240,8 +240,8 @@ def udpServerTask3(port, file, filename):
             if not data:
                 serverSocket.close()
                 break
-            data = data.decode('utf-8')
-            serverSocket.settimeout(5)
+            data = data.decode('latin-1')
+            serverSocket.settimeout(6)
             if seq <= 9:
                 pktseq = int(data[0:1])
                 data = data[5:len(data)]
