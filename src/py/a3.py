@@ -167,7 +167,7 @@ def udpClientTask3(host, port, file):
     # server = 'localhost'
     serverPort = 1235
     clientSocket = socket(AF_INET, SOCK_DGRAM)
-    buffersize = 1017
+    buffersize = 1016
     packetlist = []
     sentpacketlist = []
     seq = 0
