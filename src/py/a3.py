@@ -211,7 +211,7 @@ def udpClientTask3(host, port, file):
             findMissingPacketsAndRetransmit(
                 clientSocket, packetlist, server, serverPort, sentpacketlist, ackpktlist)
             base = nextseq
-            windowsize -= 2
+            windowsize /= 2
         else:
             # ACK for the sent packets were successfully received.
             # Hence, increasing the window size
