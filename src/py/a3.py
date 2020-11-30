@@ -167,7 +167,7 @@ def udpClientTask3(host, port, file):
     # server = 'localhost'
     serverPort = 1235
     clientSocket = socket(AF_INET, SOCK_DGRAM)
-    buffersize = 1017
+    buffersize = 1024
     packetlist = []
     sentpacketlist = []
     seq = 0
@@ -236,7 +236,7 @@ def udpServerTask3(port, file, filename):
     file.close()
     try:
         while True:
-            data, addr = serverSocket.recvfrom(1024)
+            data, addr = serverSocket.recvfrom(1032)
             if not data:
                 serverSocket.close()
                 break
