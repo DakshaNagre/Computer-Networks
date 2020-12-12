@@ -50,6 +50,8 @@ class MyController(app_manager.RyuApp):
         # pass ARP to the NORMAL host switching behavior
         match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP)
         actions = [parser.OFPActionOutput(ofproto.OFPP_NORMAL,
+                                          ofproto.OFPCML_NO_BUFFER),
+                   parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 100, match, actions)
 
@@ -134,7 +136,7 @@ class MyController(app_manager.RyuApp):
             self.logger.info("IP-TTL  : {}".format(v4_pkt.ttl))
             self.logger.info("IP-PROTO: {}".format(v4_pkt.proto))
         self.logger.info("-------------------------------------")
-        if os.environ.get("RYUMODE",None) == "ARP": learn_routes()
+        if os.environ.get("RYUMODE",None) == "ARP": self.learn_routes(msg, datapath, ofproto, parser)
 
     def add_routes(self, datapath, ofproto, parser):
         # This is where you will add flows to route IPv4 traffic
@@ -149,7 +151,7 @@ class MyController(app_manager.RyuApp):
         # point for creating your own rules.
         pass
     
-    def learn_routes(self, datapath, ofproto, parser):
+    def learn_routes(self, msg, datapath, ofproto, parser):
         # This is where you will learn the IPv4 routes based on
         # incoming traffic
         #
