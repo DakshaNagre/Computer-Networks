@@ -15,6 +15,7 @@ from ryu.lib.packet import arp
 from ryu.lib.packet import ipv4
 from ryu.lib.packet import ipv6
 
+
 class MyController(app_manager.RyuApp):
 
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -23,7 +24,6 @@ class MyController(app_manager.RyuApp):
         super(MyController, self).__init__(*args, **kwargs)
         self.datapaths = {}
 
-        
     @set_ev_cls(ofp_event.EventOFPStateChange,
                 [MAIN_DISPATCHER, DEAD_DISPATCHER])
     def _state_change_handler(self, ev):
@@ -37,7 +37,6 @@ class MyController(app_manager.RyuApp):
                 self.logger.debug('unregister datapath: %016x', datapath.id)
                 del self.datapaths[datapath.id]
 
-                
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
@@ -57,14 +56,16 @@ class MyController(app_manager.RyuApp):
         match = parser.OFPMatch()
         actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
+        # if no other rules match send it to the controller
         self.add_flow(datapath, 0, match, actions)
 
         # You will add your assignment routes in this method defined
         # at the end of the file
-        if os.environ.get("RYUMODE",None) != "ARP": self.add_routes(datapath, ofproto, parser)
-
+        if os.environ.get("RYUMODE", None) != "ARP":
+            self.add_routes(datapath, ofproto, parser)
 
     # removes all flows in table 0
+
     def delete_flows(self, datapath):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
@@ -78,13 +79,13 @@ class MyController(app_manager.RyuApp):
                                 OFPG_ANY, 0,
                                 match, instructions)
         datapath.send_msg(mod)
-        
-    
+
     # helper method to install flows to a given datapath (switch)
+
     def add_flow(self, datapath, priority, match, actions, buffer_id=None):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        
+
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
         if buffer_id:
@@ -96,14 +97,13 @@ class MyController(app_manager.RyuApp):
                                     match=match, instructions=inst)
         datapath.send_msg(mod)
 
-            
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-        
+
         # get Datapath ID to identify connected switches
         dpid = datapath.id
 
@@ -134,25 +134,70 @@ class MyController(app_manager.RyuApp):
             self.logger.info("IP-TTL  : {}".format(v4_pkt.ttl))
             self.logger.info("IP-PROTO: {}".format(v4_pkt.proto))
         self.logger.info("-------------------------------------")
-        if os.environ.get("RYUMODE",None) == "ARP": learn_routes()
+
+        if os.environ.get("RYUMODE", None) == "ARP":
+            self.learn_routes(msg, datapath, ofproto,
+                              parser, src, dst, in_port, v4_pkt.src, v4_pkt.dst)
 
     def add_routes(self, datapath, ofproto, parser):
-        # This is where you will add flows to route IPv4 traffic
-        # across your experiment testbed
-        #
-        # This method is invoked when new switches (datapaths) connect
-        # to the controller. (From switch_features_handler() above)
-        #
-        # Any IPv4 traffic that does not match one of your installed
-        # rules will be output in the packet_in_handler() above. You
-        # can use the above methods, and example below, as a starting
-        # point for creating your own rules.
-        pass
-    
-    def learn_routes(self, datapath, ofproto, parser):
-        # This is where you will learn the IPv4 routes based on
-        # incoming traffic
-        #
-        # This method will replace add_routes when the RYUMODE
-        # environment variable is set to ARP
-        pass
+
+        #        match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+        #                                ipv4_dst= '10.10.68.10')
+        #        actions = [parser.OFPActionDecNwTtl(), parser.OFPActionSetField(eth_src="f4:52:14:01:71:70"), parser.OFPActionSetField(eth_dst= 'f4:52:14:49:54:60'), parser.OFPActionOutput(2)]
+        #        self.add_flow(datapath, 200, match, actions)
+
+        # adding route from server to client
+
+        match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+                                ipv4_dst='10.10.67.10')
+        actions = [parser.OFPActionDecNwTtl(), parser.OFPActionSetField(eth_src="f4:52:14:49:54:60"),
+                   parser.OFPActionSetField(eth_dst='00:02:c9:18:10:40'), parser.OFPActionOutput(4)]
+        self.add_flow(datapath, 200, match, actions)
+
+        # adding route from client to server
+
+        match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+                                ipv4_dst='10.10.68.10')
+        actions = [parser.OFPActionDecNwTtl(), parser.OFPActionSetField(eth_src="f4:52:14:49:54:60"),
+                   parser.OFPActionSetField(eth_dst='f4:52:14:01:71:70'), parser.OFPActionOutput(3)]
+        self.add_flow(datapath, 200, match, actions)
+
+    # This is where you will add flows to route IPv4 traffic
+    # across your experiment testbed
+    #
+    # This method is invoked when new switches (datapaths) connect
+    # to the controller. (From switch_features_handler() above)
+    #
+    # Any IPv4 traffic that does not match one of your installed
+    # rules will be output in the packet_in_handler() above. You
+    # can use the above methods, and example below, as a starting
+    # point for creating your own rules.
+    # pass
+
+    #  stores mapping for ipaddress and port
+    map = dict()
+    #  stores mapping for ipaddress and MAC Address
+    macAdd = dict()
+
+    def learn_routes(self, msg, datapath, ofproto, parser, src, dest, in_port, ipSrc, ipDest):
+
+        if ipSrc not in self.map:
+            self.map[ipSrc] = in_port
+            self.macAdd[ipSrc] = src
+
+            print("!!!!!!!!! Modified map : ip : ",
+                  ipSrc, " port : ", self.map[ipSrc])
+
+        if ipDest in self.map:
+            print("There is a match for ", ipDest,
+                  " in map: ", self.map[ipDest])
+            print("map : ", self.map, " macAdd : ", self.macAdd)
+
+            print("Source : ", ipSrc, " Dest : ", ipDest,
+                  "Dest Mac : ", self.macAdd[ipDest], " in_port : ", self.map[ipDest])
+
+            match = parser.OFPMatch(
+                eth_type=ether_types.ETH_TYPE_IP, ipv4_dst=ipDest)
+            actions = [parser.OFPActionDecNwTtl(), parser.OFPActionSetField(eth_src="f4:52:14:49:54:60"),
+                       parser.OFPActionSetField(eth_dst=self.macAdd[ipDest]), parser.OFPActionOutput(self.map[ipDest])]
+            self.add_flow(datapath, 200, match, actions)
