@@ -49,6 +49,8 @@ class MyController(app_manager.RyuApp):
         # pass ARP to the NORMAL host switching behavior
         match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_ARP)
         actions = [parser.OFPActionOutput(ofproto.OFPP_NORMAL,
+                                          ofproto.OFPCML_NO_BUFFER),
+                   parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 100, match, actions)
 
